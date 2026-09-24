@@ -1,0 +1,10 @@
+---
+description: Session worktree, feature commit, conflict-aware main merge, and cleanup.
+alwaysApply: true
+---
+
+# Feature Branch Merge
+
+Before feature edits, follow the repository protocol in
+`.codex/rules/feature-branch-merge.md`. Do not maintain a Cursor-only copy of
+that policy. Keep the full Git workflow only in that Codex rule file.
