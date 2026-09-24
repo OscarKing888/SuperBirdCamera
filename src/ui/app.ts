@@ -31,11 +31,12 @@ let sceneApi: SceneApi;
 export function mountApp(root: HTMLElement): void {
   root.innerHTML = `
     <header class="topbar">
-      <h1>镜头光学 3D 对比台</h1>
-      <span class="badge">物理尺寸推算</span>
-      <span class="badge">多镜头并排</span>
+      <h1>镜头光学 3D</h1>
+      <span class="badge hide-sm">物理尺寸推算</span>
+      <span class="badge hide-sm">多镜头并排</span>
       <div class="spacer"></div>
-      <label>对齐
+      <button id="togglePanel" type="button" class="btn-panel">参数</button>
+      <label class="hide-sm">对齐
         <select id="alignMode">
           <option value="mount">卡口端对齐</option>
           <option value="front">前端对齐</option>
@@ -51,8 +52,11 @@ export function mountApp(root: HTMLElement): void {
       <button id="viewSide" type="button">侧视</button>
       <button id="resetCam" type="button">复位相机</button>
     </header>
-    <aside class="panel">
-      <h2>镜头参数</h2>
+    <aside class="panel" id="panel">
+      <div class="panel-head">
+        <h2>镜头参数</h2>
+        <button id="closePanel" type="button" class="btn-panel hide-lg">收起</button>
+      </div>
       <div class="sel-hint" id="selHint">未选中镜头 · 可直接「添加镜头」</div>
       <div class="field"><label>名称</label><input id="name" placeholder="可选" /></div>
       <div class="field"><label>卡口</label>
@@ -126,6 +130,16 @@ export function mountApp(root: HTMLElement): void {
     if (!node) throw new Error(`missing #${id}`);
     return node;
   };
+
+  const panel = el<HTMLDivElement>('panel');
+  const togglePanel = el<HTMLButtonElement>('togglePanel');
+  const closePanel = el<HTMLButtonElement>('closePanel');
+  const setPanelOpen = (open: boolean) => {
+    panel.classList.toggle('open', open);
+    sceneApi.resize();
+  };
+  togglePanel.addEventListener('click', () => setPanelOpen(!panel.classList.contains('open')));
+  closePanel.addEventListener('click', () => setPanelOpen(false));
 
   const name = el<HTMLInputElement>('name');
   const mount = el<HTMLSelectElement>('mount');
@@ -353,6 +367,26 @@ export function mountApp(root: HTMLElement): void {
         sceneApi.setLensWireframe(index, state.lensWire[index]);
         renderCards();
       });
+      const upBtn = document.createElement('button');
+      upBtn.type = 'button';
+      upBtn.textContent = '←';
+      upBtn.title = '前移';
+      upBtn.className = 'order-btn';
+      upBtn.disabled = index === 0;
+      upBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        reorderLens(index, index - 1);
+      });
+      const downBtn = document.createElement('button');
+      downBtn.type = 'button';
+      downBtn.textContent = '→';
+      downBtn.title = '后移';
+      downBtn.className = 'order-btn';
+      downBtn.disabled = index === state.lenses.length - 1;
+      downBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        reorderLens(index, index + 1);
+      });
       const editBtn = document.createElement('button');
       editBtn.type = 'button';
       editBtn.textContent = '编辑';
@@ -374,7 +408,7 @@ export function mountApp(root: HTMLElement): void {
         sceneApi.setLenses(state.lenses, state.lensWire);
         renderCards();
       });
-      actions.append(wireBtn, editBtn, delBtn);
+      actions.append(upBtn, downBtn, wireBtn, editBtn, delBtn);
       card.appendChild(actions);
       cards.appendChild(card);
     });

@@ -262,3 +262,148 @@ body {
   color: var(--accent-2);
   margin-right: 4px;
 }
+
+.btn-panel {
+  display: none;
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.panel-head h2 {
+  margin: 0;
+}
+
+/* —— 触控 / 手机 —— */
+@media (pointer: coarse) {
+  .topbar select,
+  .topbar button,
+  .panel button,
+  .card-actions button {
+    min-height: 40px;
+    min-width: 40px;
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  .field input,
+  .field select {
+    min-height: 40px;
+    font-size: 14px;
+  }
+
+  .card {
+    cursor: default;
+    touch-action: pan-y;
+  }
+}
+
+@media (max-width: 860px) {
+  html,
+  body {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  #app {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr 132px;
+    height: 100dvh;
+    height: 100vh;
+  }
+
+  .topbar {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px 10px;
+    min-height: 48px;
+    padding-top: calc(8px + env(safe-area-inset-top, 0px));
+  }
+
+  .topbar h1 {
+    font-size: 14px;
+  }
+
+  .hide-sm {
+    display: none !important;
+  }
+
+  .btn-panel {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .topbar .spacer {
+    display: none;
+  }
+
+  .topbar select,
+  .topbar button {
+    min-height: 36px;
+  }
+
+  /* 抽屉式参数台 */
+  .panel {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: auto;
+    z-index: 30;
+    max-height: min(62vh, 520px);
+    border-right: none;
+    border-top: 1px solid var(--panel-border);
+    border-radius: 14px 14px 0 0;
+    transform: translateY(110%);
+    transition: transform 0.22s ease;
+    padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.45);
+  }
+
+  .panel.open {
+    transform: translateY(0);
+  }
+
+  .field {
+    grid-template-columns: 72px 1fr;
+  }
+
+  .viewport {
+    grid-row: 2;
+    min-height: 220px;
+  }
+
+  .cards {
+    grid-column: 1;
+    grid-row: 3;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .card {
+    min-width: 200px;
+  }
+
+  .card-actions {
+    flex-wrap: wrap;
+  }
+
+  .order-btn {
+    min-width: 36px;
+  }
+}
+
+@media (max-width: 860px) {
+  .hide-lg {
+    display: inline-flex !important;
+  }
+}
+
+@media (min-width: 861px) {
+  .hide-lg {
+    display: none !important;
+  }
+}
