@@ -1,14 +1,20 @@
 ---
 feature: lens-optical-3d
-status: in-progress
+status: delivered
 updated: 2026-02-25
 branch: session/lens-3d-htg7x9
-commits: # filled at delivery
+commits: 75dc277..4203142
 ---
 
 # 镜头光学 3D 对比台
 
 ## Report
+
+**What was built** — 在既有镜头光学 3D 对比台上补齐 [S4]：300mm+ 外壳与内部镜组按参考剖面图的归一化轴向比例 `u=z/L` 分段（卡口/滤镜槽、开关后筒、套环+L 脚座、功能/对焦环、大前筒、遮光罩；镜组中心 前玉 0.92、黄胶合 0.52–0.56、橙弯月 0.43、中继 0.34/0.37、绿后组 0.16–0.28、平板 0.12）。顶栏「剖面 / 内部」可切换外壳半透明与镜组显示。根目录 `build.bat` 安装依赖并产出 `dist/`，同时拷贝 `run.bat`+`serve.ps1`；双击 `dist/run.bat` 起本地静态服务并在监听成功后打开浏览器。
+
+**Verification** — `npm test` PASS 15/15（含轴向 u 与镜组 z 中心断言）；`build.bat` PASS；`dist/run.bat` HTTP 200，`/../package.json` 路径穿越返回 404。独立评审 [S4] 三项 AC 均 MET；critical（serve 路径穿越、浏览器启动竞态）已修，复审 4 项 MET、无新增 critical。
+
+**Journey log** — 1) 环境禁止 `git worktree add`，经确认改在主工作区 `session/lens-3d-htg7x9`。2) 入瞳公式曾写成 `N/(tc·rd)`，改为 `N·tc·rd` 以符合增距变慢/减焦变快。3) 巨型 600/0.9 镜使默认相机取景失败，改为按镜头包围盒手动取景；技术视图用正交相机。4) Three.js 球冠原点在曲率中心，前玉必须平移后再居中。5) 静态服务必须 `root + 路径分隔符` 前缀校验防 `../` 逃逸；浏览器须在 `Listen()` 成功后再打开。6) bat 内嵌多行 PowerShell 易碎，拆成 `serve.ps1` 更稳。
 
 **What was built** — Vite + TypeScript + Three.js 单页「镜头光学 3D 对比台」。`src/optics.ts` 按高斯光学与工程分段公式，由卡口/焦段/光圈/变焦位置/对焦距离/增距/减焦推算入瞳、前口径、镜身分段长度、FOV、像距、后焦参考；示例 `E f/0.9 600mm`（Ø前 700mm）与 `E f/0.9–f/2.8 70–200mm` 可并排渲染。Three.js 程序化镜筒、前玉、120mm 参考鸟与毫米标尺；支持轨道旋转、卡口/前端/中心对齐、正交顶/前/侧视、线框叠加与变焦实时改形。UI 为工程仪器风中文参数台 + 镜头卡片。
 
@@ -172,7 +178,7 @@ commits: # filled at delivery
 - [x] T3: 程序化镜头网格构建器 — acceptance: 单组 `E f/0.9 600mm` 与 `E 70–200 f/2.8` 外观分段直径/长度与 `LensGeometry` 数值一致 (covers: S2; depends: T1)
 - [x] T4: 多镜头并排 + 对齐/线框/参数台 UI — acceptance: 可添加题述两组并按卡口/前端对齐，顶视图对齐正确，线框可叠加，变焦滑杆实时改形 (covers: S2; depends: T2, T3)
 - [x] T5: 构建与聚焦验证 — acceptance: `npm run build` 成功，`npm test` 全绿；记录命令结果 (covers: S2; depends: T4)
-- [ ] T6: 300mm+ 轴向比例对齐参考图 — acceptance: 外壳分段与镜组 u 落在 [S4] 表内；单测断言关键分段中心 u (covers: S4)
-- [ ] T7: 剖面 UI 选项 — acceptance: 顶栏「剖面 / 内部」可开关镜组与外壳透明度 (covers: S4; depends: T6)
-- [ ] T8: build.bat 与 dist/run.bat — acceptance: `build.bat` 产出 dist 且含 run.bat；run.bat 能打开浏览器访问 (covers: S4)
-- [ ] T9: 验证 + 独立评审 — acceptance: `npm test`/`npm run build` 通过；评审覆盖 T6–T8 (covers: S4; depends: T6, T7, T8)
+- [x] T6: 300mm+ 轴向比例对齐参考图 — acceptance: 外壳分段与镜组 u 落在 [S4] 表内；单测断言关键分段中心 u (covers: S4)
+- [x] T7: 剖面 UI 选项 — acceptance: 顶栏「剖面 / 内部」可开关镜组与外壳透明度 (covers: S4; depends: T6)
+- [x] T8: build.bat 与 dist/run.bat — acceptance: `build.bat` 产出 dist 且含 run.bat；run.bat 能打开浏览器访问 (covers: S4)
+- [x] T9: 验证 + 独立评审 — acceptance: `npm test`/`npm run build` 通过；评审覆盖 T6–T8 (covers: S4; depends: T6, T7, T8)
