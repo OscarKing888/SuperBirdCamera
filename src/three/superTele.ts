@@ -28,7 +28,7 @@ export const AXIAL = {
   elFront: 0.92,
 } as const;
 
-/** 直径相对 D_front */
+/** 半径相对 D_front（几何中 r = dF * k，外径 = 2k * D_front） */
 export const RADIAL = {
   hood: 0.52,
   front: 0.5,

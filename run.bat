@@ -19,7 +19,7 @@ if not exist "serve.ps1" (
 echo Serving %cd%
 echo URL: %URL%
 echo Close this window to stop the server.
-start "" "%URL%"
+echo Browser opens automatically after the server is listening.
 
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0serve.ps1"
 if errorlevel 1 (

@@ -39,6 +39,8 @@ describe('buildLensMeshes super-tele', () => {
     expect(AXIAL.elOrange).toBeCloseTo(0.43, 5);
     expect(AXIAL.elGreen[0]).toBeCloseTo(0.16, 5);
     expect(AXIAL.elGreen[AXIAL.elGreen.length - 1]).toBeCloseTo(0.28, 5);
+    expect(AXIAL.elClear[0]).toBeCloseTo(0.34, 5);
+    expect(AXIAL.elClear[1]).toBeCloseTo(0.37, 5);
     expect(AXIAL.elPlate).toBeCloseTo(0.12, 5);
     expect(AXIAL.frontEnd).toBeCloseTo(0.92, 5);
     expect(AXIAL.stepEnd).toBeCloseTo(0.66, 5);

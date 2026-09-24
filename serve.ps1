@@ -21,6 +21,9 @@ try {
 Write-Host "Listening on $prefix"
 Write-Host 'Close this window to stop the server.'
 
+# 首次成功监听后再打开浏览器，避免 run.bat 的 start 竞态
+Start-Process $prefix
+
 while ($true) {
   $ctx = $listener.GetContext()
   try {
@@ -29,7 +32,14 @@ while ($true) {
     $rel = $rel.Replace('/', [IO.Path]::DirectorySeparatorChar)
     $full = [IO.Path]::GetFullPath((Join-Path $root $rel))
     $rootFull = [IO.Path]::GetFullPath($root)
-    if ($full.StartsWith($rootFull) -and (Test-Path -LiteralPath $full -PathType Leaf)) {
+    if (-not $rootFull.EndsWith([IO.Path]::DirectorySeparatorChar)) {
+      $rootFull += [IO.Path]::DirectorySeparatorChar
+    }
+    $okPath = $full.StartsWith($rootFull, [StringComparison]::OrdinalIgnoreCase)
+    if (-not $okPath) {
+      $okPath = ([IO.Path]::GetFullPath($full) -ieq $rootFull.TrimEnd([IO.Path]::DirectorySeparatorChar))
+    }
+    if ($okPath -and (Test-Path -LiteralPath $full -PathType Leaf)) {
       $bytes = [IO.File]::ReadAllBytes($full)
       $ext = [IO.Path]::GetExtension($full).ToLowerInvariant()
       $ctype = 'application/octet-stream'

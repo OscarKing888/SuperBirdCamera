@@ -24,9 +24,13 @@ if errorlevel 1 (
 echo [3/3] Copying launcher into dist...
 if not exist "dist" mkdir dist
 copy /y "run.bat" "dist\run.bat" >nul
+if errorlevel 1 (
+  echo ERROR: failed to copy run.bat
+  exit /b 1
+)
 copy /y "serve.ps1" "dist\serve.ps1" >nul
 if errorlevel 1 (
-  echo ERROR: failed to copy launcher scripts
+  echo ERROR: failed to copy serve.ps1
   exit /b 1
 )
 
