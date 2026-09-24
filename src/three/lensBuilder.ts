@@ -52,14 +52,17 @@ function makeCylinder(
 }
 
 function makeFrontGlass(diameter: number, thickness: number): THREE.Mesh {
-  // 球冠近似前玉：曲率半径 R≈0.9·D（规格），沿局部 +Y 是冠高
+  // 球冠近似前玉：曲率半径 R≈0.9·D（规格）
+  // Three.js 球冠原点在曲率中心，需平移使冠体沿光轴占据 [0, thickness] 再居中
   const radius = Math.max(diameter * 0.9, thickness * 2);
   const capHeight = radius * (1 - Math.cos(0.55));
   const sphere = new THREE.SphereGeometry(radius, 48, 24, 0, Math.PI * 2, 0, 0.55);
+  sphere.translate(0, -radius * Math.cos(0.55), 0);
+  sphere.scale(1, thickness / capHeight, 1);
+  sphere.translate(0, -thickness / 2, 0);
   const mat = barrelMaterial('frontGlass');
   const mesh = new THREE.Mesh(sphere, mat);
-  mesh.scale.y = thickness / capHeight;
-  // +Y 冠轴转到光轴 +Z
+  // +Y 冠轴 → 光轴 +Z
   mesh.rotation.x = Math.PI / 2;
   return mesh;
 }

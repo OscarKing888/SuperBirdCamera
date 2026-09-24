@@ -80,7 +80,7 @@ commits: # filled at delivery
    - **卡口座** `mountShank`：长度 `flange * 0.35`（不足 8mm 取 8），直径 `mount_out`，带简易卡爪缺口。
    - **后组筒** `rearBarrel`：直径 `D_mount_out * 1.15`，长度  
      `L_rear = max(flange * 0.55, 0.18 * f_eff) + focusTravel`  
-     `focusTravel = clamp(0.02 * focusDistance_or_2000, 0.5, 25)`（无穷远用 2000）。
+     `focusTravel`：有限物距取 `clamp(0.02 * focusDistance, 0.5, 25)`，无穷远取 `1.5`（行程参考；高斯光学单独按 u→∞ 处理）。
    - **中组变焦筒** `midBarrel`：直径 `lerp(D_rear, D_front, 0.45)`。  
      内变焦长度 `L_mid = zoomSpan`；外变焦 `L_mid = zoomSpan * (0.35 + 0.65 * zoom)`。  
      `zoomSpan = clamp(0.12 * |f_max - f_min| + 0.08 * f_max, 8, max(8, 0.55 * f_est))`，定焦取 `8`。

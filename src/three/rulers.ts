@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { BIRD_HEIGHT_MM } from './bird';
 
 export interface RulerBundle {
   group: THREE.Group;
@@ -54,18 +55,18 @@ export function createRulers(): RulerBundle {
   // 鸟旁身高标尺（可随鸟平移）
   const heightPts = [
     new THREE.Vector3(-20, 0, 0),
-    new THREE.Vector3(-20, 120, 0),
+    new THREE.Vector3(-20, BIRD_HEIGHT_MM, 0),
     new THREE.Vector3(-26, 0, 0),
     new THREE.Vector3(-14, 0, 0),
-    new THREE.Vector3(-26, 120, 0),
-    new THREE.Vector3(-14, 120, 0),
+    new THREE.Vector3(-26, BIRD_HEIGHT_MM, 0),
+    new THREE.Vector3(-14, BIRD_HEIGHT_MM, 0),
   ];
   const hGeo = new THREE.BufferGeometry().setFromPoints(heightPts);
   disposables.push(hGeo);
   const heightBar = new THREE.LineSegments(hGeo, barMat);
   group.add(heightBar);
-  const hLabel = makeTextSprite('120mm');
-  hLabel.position.set(-50, 130, 0);
+  const hLabel = makeTextSprite(`${BIRD_HEIGHT_MM}mm`);
+  hLabel.position.set(-50, BIRD_HEIGHT_MM + 10, 0);
   group.add(hLabel);
   disposables.push(hLabel.material as THREE.Material);
 
@@ -73,7 +74,7 @@ export function createRulers(): RulerBundle {
     group,
     setBirdMarker(x, z) {
       heightBar.position.set(x, 0, z);
-      hLabel.position.set(x - 50, 130, z);
+      hLabel.position.set(x - 50, BIRD_HEIGHT_MM + 10, z);
     },
     setVisible: (on: boolean) => {
       group.visible = on;

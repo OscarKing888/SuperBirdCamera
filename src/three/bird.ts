@@ -2,9 +2,10 @@ import * as THREE from 'three';
 
 /**
  * 低多边形参考鸟（单位 mm）。
- * 身高约 120mm、翼展约 120mm，站立于 y=0 地面，供镜头比例对照。
+ * 身高/翼展约 120mm，站立于 y=0 地面，供镜头比例对照。
  */
 export const BIRD_HEIGHT_MM = 120;
+export const BIRD_SPAN_MM = 120;
 
 export function createBird(): THREE.Group {
   const bird = new THREE.Group();
@@ -68,9 +69,13 @@ export function createBird(): THREE.Group {
     bird.add(foot);
   }
 
-  // 原始几何头顶约 y=78，缩放到规格身高 120mm
-  const rawHeight = 78;
-  bird.scale.setScalar(BIRD_HEIGHT_MM / rawHeight);
+  // 非等比缩放到规格身高/翼展，避免均匀放大把翼展撑破
+  bird.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(bird);
+  const size = box.getSize(new THREE.Vector3());
+  const sy = size.y > 1e-6 ? BIRD_HEIGHT_MM / size.y : 1;
+  const sz = size.z > 1e-6 ? BIRD_SPAN_MM / size.z : 1;
+  bird.scale.set(1, sy, sz);
   bird.position.set(0, 0, 0);
   return bird;
 }
