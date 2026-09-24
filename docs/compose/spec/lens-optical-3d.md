@@ -1,14 +1,20 @@
 ---
 feature: lens-optical-3d
-status: in-progress
+status: delivered
 updated: 2026-02-25
 branch: session/lens-3d-htg7x9
-commits: # filled at delivery
+commits: be9c6bbc472efe8f89ba91e29b3cb9b2c4305e40..21a29ddfcb2fcb99eb7c749983a3575b9d10a904
 ---
 
 # 镜头光学 3D 对比台
 
 ## Report
+
+**What was built** — Vite + TypeScript + Three.js 单页「镜头光学 3D 对比台」。`src/optics.ts` 按高斯光学与工程分段公式，由卡口/焦段/光圈/变焦位置/对焦距离/增距/减焦推算入瞳、前口径、镜身分段长度、FOV、像距、后焦参考；示例 `E f/0.9 600mm`（Ø前 700mm）与 `E f/0.9–f/2.8 70–200mm` 可并排渲染。Three.js 程序化镜筒、前玉、120mm 参考鸟与毫米标尺；支持轨道旋转、卡口/前端/中心对齐、正交顶/前/侧视、线框叠加与变焦实时改形。UI 为工程仪器风中文参数台 + 镜头卡片。
+
+**Verification** — `npm test` PASS 11/11（optics 10 + bird 尺寸 1）；`npm run build` PASS（`tsc --noEmit && vite build`）；Edge 无头截图验证 demo 双镜、标尺、鸟、卡片与顶视。两轮独立评审：首轮 critical（无穷远薄透镜、标签泄漏、XSS、定焦外变焦、前玉轴向、鸟翼展等）已修；复审 `21a29dd` 四项 MET、无新增 critical。
+
+**Journey log** — 1) 环境禁止 `git worktree add`，经确认改在主工作区 `session/lens-3d-htg7x9`。2) 入瞳公式曾写成 `N/(tc·rd)`，改为 `N·tc·rd` 以符合增距变慢/减焦变快。3) 巨型 600/0.9 镜使默认相机取景失败，改为按镜头包围盒手动取景；技术视图用正交相机。4) Three.js 球冠原点在曲率中心，前玉必须平移后再居中，否则会飞出镜段。5) 鸟等比放大到身高 120 会撑破翼展，需按 Box3 非等比缩放。
 
 ## [S1] Problem
 
@@ -138,8 +144,8 @@ commits: # filled at delivery
 
 ## Tasks
 
-- [ ] T1: 挂载表与光学纯函数 + 单元测试 — acceptance: `npm test` 覆盖 f_eff/N_eff/D_front/L_total/TC/减焦/变焦插值，断言与公式一致 (covers: S2)
-- [ ] T2: Three.js 场景骨架（相机/灯光/轨道/标尺/鸟/视图预设） — acceptance: 打开页面可见网格标尺与鸟，可旋转缩放，顶视/透视可切换 (covers: S2; depends: T1)
-- [ ] T3: 程序化镜头网格构建器 — acceptance: 单组 `E f/0.9 600mm` 与 `E 70–200 f/2.8` 外观分段直径/长度与 `LensGeometry` 数值一致 (covers: S2; depends: T1)
-- [ ] T4: 多镜头并排 + 对齐/线框/参数台 UI — acceptance: 可添加题述两组并按卡口/前端对齐，顶视图对齐正确，线框可叠加，变焦滑杆实时改形 (covers: S2; depends: T2, T3)
-- [ ] T5: 构建与聚焦验证 — acceptance: `npm run build` 成功，`npm test` 全绿；记录命令结果 (covers: S2; depends: T4)
+- [x] T1: 挂载表与光学纯函数 + 单元测试 — acceptance: `npm test` 覆盖 f_eff/N_eff/D_front/L_total/TC/减焦/变焦插值，断言与公式一致 (covers: S2)
+- [x] T2: Three.js 场景骨架（相机/灯光/轨道/标尺/鸟/视图预设） — acceptance: 打开页面可见网格标尺与鸟，可旋转缩放，顶视/透视可切换 (covers: S2; depends: T1)
+- [x] T3: 程序化镜头网格构建器 — acceptance: 单组 `E f/0.9 600mm` 与 `E 70–200 f/2.8` 外观分段直径/长度与 `LensGeometry` 数值一致 (covers: S2; depends: T1)
+- [x] T4: 多镜头并排 + 对齐/线框/参数台 UI — acceptance: 可添加题述两组并按卡口/前端对齐，顶视图对齐正确，线框可叠加，变焦滑杆实时改形 (covers: S2; depends: T2, T3)
+- [x] T5: 构建与聚焦验证 — acceptance: `npm run build` 成功，`npm test` 全绿；记录命令结果 (covers: S2; depends: T4)
