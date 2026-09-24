@@ -54,8 +54,18 @@ function uZ(u: number, L: number): number {
   return u * L;
 }
 
-function tube(r0: number, r1: number, len: number, mat: THREE.Material, radial = 48): THREE.Mesh {
-  const m = new THREE.Mesh(new THREE.CylinderGeometry(r0, r1, len, radial, 1, false), mat);
+/**
+ * 圆柱台：CylinderGeometry(radiusTop, radiusBottom) 再 rotation.x=π/2
+ * 后 radiusTop 在 +Z（前/u 大端），radiusBottom 在 −Z（卡口/u 小端）。
+ */
+function tube(
+  rFront: number,
+  rRear: number,
+  len: number,
+  mat: THREE.Material,
+  radial = 48,
+): THREE.Mesh {
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(rFront, rRear, len, radial, 1, false), mat);
   m.rotation.x = Math.PI / 2;
   return m;
 }
@@ -70,12 +80,12 @@ function pushMesh(stack: BuildStack, parent: THREE.Group, mesh: THREE.Mesh, z: n
   else stack.materials.push(mat);
 }
 
-/** 沿 u∈[u0,u1] 放置圆柱段，中心在区间中点 */
+/** 沿 u∈[u0,u1] 放置镜筒段：rRear 在 u0，rFront 在 u1 */
 function segment(
   stack: BuildStack,
   parent: THREE.Group,
-  r0: number,
-  r1: number,
+  rRear: number,
+  rFront: number,
   u0: number,
   u1: number,
   L: number,
@@ -85,7 +95,7 @@ function segment(
   const len = Math.max(0.4, (u1 - u0) * L);
   const z0 = uZ(u0, L);
   const zc = z0 + len / 2;
-  pushMesh(stack, parent, tube(r0, r1, len, mat, radial), zc);
+  pushMesh(stack, parent, tube(rFront, rRear, len, mat, radial), zc);
 }
 
 function knurlU(
@@ -145,7 +155,7 @@ export function buildSuperTeleShell(
   segment(stack, parent, rMount, rMount * 0.92, 0, 0.03, L, metal, 40);
   pushMesh(stack, parent, tube(rMount * 0.5, rMount * 0.5, 1.2, black), 0.6);
   segment(stack, parent, r(RADIAL.filter), r(RADIAL.filter) * 0.98, 0.03, 0.06, L, white, 40);
-  segment(stack, parent, r(RADIAL.rear) * 0.9, r(RADIAL.filter), 0.055, 0.08, L, white, 40);
+  segment(stack, parent, r(RADIAL.filter), r(RADIAL.rear) * 0.9, 0.055, 0.08, L, white, 40);
   // 插入式滤镜槽
   const slotMat = new THREE.MeshStandardMaterial({ color: 0x4a4c52, metalness: 0.35, roughness: 0.5 });
   stack.materials.push(slotMat);
@@ -160,7 +170,7 @@ export function buildSuperTeleShell(
   stack.materials.push(black);
 
   // 后筒开关 0.08–0.28
-  segment(stack, parent, r(RADIAL.rear), r(RADIAL.rear) * 0.97, 0.08, 0.28, L, white, 48);
+  segment(stack, parent, r(RADIAL.rear) * 0.97, r(RADIAL.rear), 0.08, 0.28, L, white, 48);
   const panelMat = new THREE.MeshStandardMaterial({ color: 0xcecac2, metalness: 0.08, roughness: 0.55 });
   const swMat = new THREE.MeshStandardMaterial({ color: 0x3a3c42, metalness: 0.15, roughness: 0.55 });
   stack.materials.push(panelMat, swMat);
@@ -179,7 +189,7 @@ export function buildSuperTeleShell(
   }
 
   // 套环段 0.28–0.45
-  segment(stack, parent, r(RADIAL.collar), r(RADIAL.collar) * 0.97, 0.28, 0.45, L, whiteHi, 48);
+  segment(stack, parent, r(RADIAL.collar) * 0.97, r(RADIAL.collar), 0.28, 0.45, L, whiteHi, 48);
   pushMesh(stack, parent, tube(r(RADIAL.collar) + 1.2, r(RADIAL.collar) + 1.2, 10, whiteHi), uZ(0.36, L));
   const knob = new THREE.Mesh(new THREE.CylinderGeometry(6, 6, 5, 22), whiteHi);
   knob.rotation.z = Math.PI / 2;
@@ -224,12 +234,14 @@ export function buildSuperTeleShell(
   stack.materials.push(black);
   // 环段在环之间补白筒
   segment(stack, parent, r(RADIAL.ring), r(RADIAL.ring), 0.45, 0.62, L, white, 40);
+  // 环段 → 后筒 过渡（套环前）
+  segment(stack, parent, r(RADIAL.collar), r(RADIAL.ring), 0.45, 0.45 + 0.02, L, white, 40);
 
-  // 台阶 0.62–0.66
+  // 台阶 0.62–0.66：后端接环段细径，前端收到大前筒 —— 外轮廓向喇叭口张开
   segment(stack, parent, r(RADIAL.ring), r(RADIAL.front), 0.62, 0.66, L, white, 48);
 
-  // 大前筒 0.66–0.92
-  segment(stack, parent, r(RADIAL.front), r(RADIAL.front) * 0.98, 0.66, 0.92, L, white, 52);
+  // 大前筒 0.66–0.92：与台阶前口同径，避免反向尖口
+  segment(stack, parent, r(RADIAL.front), r(RADIAL.front), 0.66, 0.92, L, white, 52);
   const badgeMat = new THREE.MeshStandardMaterial({ color: G_BADGE, metalness: 0.15, roughness: 0.45 });
   stack.materials.push(badgeMat);
   const badge = new THREE.Mesh(new THREE.BoxGeometry(12, 12, 1.4), badgeMat);
@@ -242,9 +254,10 @@ export function buildSuperTeleShell(
   stack.geometries.push(badgeInner.geometry);
   stack.materials.push(whiteHi);
 
-  // 遮光罩 0.92–1.00
-  segment(stack, parent, r(RADIAL.hood), r(RADIAL.hood) * 0.98, 0.92, 1.0, L, black, 52);
-  pushMesh(stack, parent, tube(r(RADIAL.hood) * 0.7, r(RADIAL.hood) * 0.68, 8, black), uZ(0.96, L));
+  // 遮光罩 0.92–1.00：前口最粗，与前筒以肩部台阶相接（不是 V 形尖口）
+  segment(stack, parent, r(RADIAL.front), r(RADIAL.hood), 0.92, 1.0, L, black, 52);
+  // 罩口内遮光（略收）
+  pushMesh(stack, parent, tube(r(RADIAL.hood) * 0.72, r(RADIAL.hood) * 0.68, 8, black), uZ(0.96, L));
 }
 
 function lensElement(
