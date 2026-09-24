@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
 import { computeOptics } from '../optics';
 import { buildLensMeshes } from './lensBuilder';
-import { AXIAL, RADIAL } from './superTele';
+import { AXIAL, profileRadius } from './superTele';
 
 function sampleTele() {
   return computeOptics({
@@ -32,28 +32,27 @@ describe('buildLensMeshes super-tele', () => {
     bundle.dispose();
   });
 
-  it('keeps optical element centers on reference axial fractions', () => {
-    expect(AXIAL.elFront).toBeCloseTo(0.92, 5);
-    expect(AXIAL.elYellow[0]).toBeGreaterThanOrEqual(0.52);
-    expect(AXIAL.elYellow[2]).toBeLessThanOrEqual(0.56);
-    expect(AXIAL.elOrange).toBeCloseTo(0.43, 5);
-    expect(AXIAL.elGreen[0]).toBeCloseTo(0.16, 5);
-    expect(AXIAL.elGreen[AXIAL.elGreen.length - 1]).toBeCloseTo(0.28, 5);
-    expect(AXIAL.elClear[0]).toBeCloseTo(0.34, 5);
-    expect(AXIAL.elClear[1]).toBeCloseTo(0.37, 5);
-    expect(AXIAL.elPlate).toBeCloseTo(0.12, 5);
-    expect(AXIAL.frontEnd).toBeCloseTo(0.92, 5);
-    expect(AXIAL.stepEnd).toBeCloseTo(0.66, 5);
-    expect(AXIAL.ringEnd).toBeCloseTo(0.62, 5);
+  it('keeps optical element centers on measured reference fractions', () => {
+    // 剖面图实测：前玉 ~0.95，黄胶合 0.47/0.50/0.53，橙 0.42，绿 0.12–0.20，平板 0.08
+    expect(AXIAL.elFront).toBeCloseTo(0.95, 5);
+    expect(AXIAL.elYellow[0]).toBeCloseTo(0.47, 5);
+    expect(AXIAL.elYellow[1]).toBeCloseTo(0.5, 5);
+    expect(AXIAL.elYellow[2]).toBeCloseTo(0.53, 5);
+    expect(AXIAL.elOrange).toBeCloseTo(0.42, 5);
+    expect(AXIAL.elGreen[0]).toBeCloseTo(0.12, 5);
+    expect(AXIAL.elGreen[2]).toBeCloseTo(0.2, 5);
+    expect(AXIAL.elPlate).toBeCloseTo(0.08, 5);
+    expect(AXIAL.elClear[0]).toBeCloseTo(0.36, 5);
+    expect(AXIAL.elClear[1]).toBeCloseTo(0.39, 5);
   });
 
-  it('radial steps match reference diameter ratios', () => {
-    expect(RADIAL.hood).toBeCloseTo(0.52, 5);
-    expect(RADIAL.front).toBeCloseTo(0.5, 5);
-    expect(RADIAL.rear).toBeCloseTo(0.26, 5);
-    expect(RADIAL.front).toBeGreaterThan(RADIAL.ring);
-    expect(RADIAL.ring).toBeGreaterThan(RADIAL.collar);
-    expect(RADIAL.collar).toBeGreaterThan(RADIAL.rear);
+  it('outer profile is a smooth taper peaking near the front', () => {
+    expect(profileRadius(0.9)).toBeCloseTo(0.5, 3);
+    expect(profileRadius(0.5)).toBeCloseTo(0.335, 3);
+    expect(profileRadius(0.1)).toBeCloseTo(0.25, 3);
+    expect(profileRadius(0.1)).toBeLessThan(profileRadius(0.4));
+    expect(profileRadius(0.4)).toBeLessThan(profileRadius(0.75));
+    expect(profileRadius(0.75)).toBeLessThan(profileRadius(0.9));
   });
 
   it('interior meshes sit near their u centers along optical axis', () => {
