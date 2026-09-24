@@ -150,6 +150,20 @@ describe('computeOptics', () => {
     expect(cursor).toBeCloseTo(g.lengthTotal, 6);
   });
 
+  it('super-tele 600/4 keeps realistic length/diameter ratio', () => {
+    const g = computeOptics({
+      ...baseInput,
+      mount: 'e',
+      focalMin: 600,
+      focalMax: 600,
+      apertureMin: 4,
+      apertureMax: 4,
+    });
+    const ld = g.lengthTotal / g.dFront;
+    expect(ld).toBeGreaterThanOrEqual(2.5);
+    expect(ld).toBeLessThanOrEqual(3.0);
+  });
+
   it('rejects invalid parameters', () => {
     expect(() => computeOptics({ ...baseInput, focalMin: 0 })).toThrow();
     expect(() =>

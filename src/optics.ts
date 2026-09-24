@@ -111,13 +111,39 @@ export function computeOptics(input: LensInput): LensGeometry {
 
   const frontGlassThickness = clamp(0.12 * dFront, 2, 0.2 * Math.max(fEstTotal, 40));
 
+  // 超长焦写实长径比：现代 600/4 一类 L/D≈2.6–2.8（参考剖面 ≈2.75）。
+  // 按前口径拉伸镜身分段，避免卡通矮胖；定焦 f/0.9 等极端镜头只伸不缩，保持物理尺寸。
+  const isSuperTele = fEff >= 300 || input.focalMax >= 300;
+  let L1 = lRear;
+  let L2 = lMid;
+  let L3 = lFront;
+  let L4 = frontGlassThickness;
+  if (isSuperTele) {
+    const body0 = lMount + lAccessory + L1 + L2 + L3 + L4;
+    const targetL = Math.max(body0, 2.6 * dFront, 0.7 * fEff);
+    const grow = targetL / body0;
+    if (grow > 1) {
+      const stretch = L1 + L2 + L3 + L4;
+      const k = stretch > 0 ? (stretch * grow) / stretch : 1;
+      L1 *= k;
+      L2 *= k;
+      L3 *= k;
+      L4 *= k;
+    }
+  }
+
+  const lRearFinal = L1;
+  const lMidFinal = L2;
+  const lFrontFinal = L3;
+  const glassFinal = L4;
+
   const lengthTotal =
-    lMount + lAccessory + lRear + lMid + lFront + frontGlassThickness;
+    lMount + lAccessory + lRearFinal + lMidFinal + lFrontFinal + glassFinal;
 
   const fovH = 2 * Math.atan(SENSOR_HALF_WIDTH / fEff) * (180 / Math.PI);
 
   // 薄透镜成像：u→∞ ⇒ v=f，β=0
-  const bflRef = mount.flangeDistance + lRear * 0.25;
+  const bflRef = mount.flangeDistance + lRearFinal * 0.25;
   let imageDistance: number;
   let magnification: number;
   if (isInfinity) {
@@ -162,28 +188,28 @@ export function computeOptics(input: LensInput): LensGeometry {
   push({
     id: 'rear',
     label: '后组筒',
-    length: lRear,
+    length: lRearFinal,
     diameter: dRear,
     kind: 'rear',
   });
   push({
     id: 'mid',
     label: '中组筒',
-    length: lMid,
+    length: lMidFinal,
     diameter: dMid,
     kind: 'mid',
   });
   push({
     id: 'front',
     label: '前组筒',
-    length: lFront,
+    length: lFrontFinal,
     diameter: dFront,
     kind: 'front',
   });
   push({
     id: 'frontGlass',
     label: '前玉',
-    length: frontGlassThickness,
+    length: glassFinal,
     diameter: dFront * 0.92,
     kind: 'frontGlass',
   });
@@ -200,10 +226,10 @@ export function computeOptics(input: LensInput): LensGeometry {
     lengthTotal,
     lMount,
     lAccessory,
-    lRear,
-    lMid,
-    lFront,
-    frontGlassThickness,
+    lRear: lRearFinal,
+    lMid: lMidFinal,
+    lFront: lFrontFinal,
+    frontGlassThickness: glassFinal,
     focusTravel,
     zoomSpan,
     fovH,

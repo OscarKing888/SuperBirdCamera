@@ -435,12 +435,40 @@ export function mountApp(root: HTMLElement): void {
   renderCards();
 
   const params = new URLSearchParams(window.location.search);
+  // 单条定焦快载：?one=600,4  或 ?one=600,4&view=side
+  const one = params.get('one');
+  if (one) {
+    const [fS, nS] = one.split(',');
+    const f = Number(fS);
+    const n = Number(nS);
+    if (f > 0 && n >= 0.7) {
+      pushLens({
+        mount: 'e',
+        focalMin: f,
+        focalMax: f,
+        apertureMin: n,
+        apertureMax: n,
+        zoom: 1,
+        focusDistance: Infinity,
+        teleconverter: 'none',
+        reducer: 'none',
+        barrelStyle: 'internal',
+        name: `${f}mm f/${n}`,
+      });
+    }
+    const view = params.get('view');
+    if (view === 'top' || view === 'front' || view === 'side' || view === 'perspective') {
+      sceneApi.setView(view);
+    }
+  }
   if (params.get('interior') === '1') {
     const box = el<HTMLInputElement>('interior');
     box.checked = true;
     sceneApi.setInteriorVisible(true);
   }
-  if (params.get('demo') === '1') {
+  if (one) {
+    // already loaded
+  } else if (params.get('demo') === '1') {
     loadPresetDemo();
     const view = params.get('view');
     if (view === 'top' || view === 'front' || view === 'side' || view === 'perspective') {
