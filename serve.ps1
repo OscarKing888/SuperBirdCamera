@@ -1,24 +1,41 @@
 # Static file server for SuperBirdCamera lens studio dist/
 $ErrorActionPreference = 'Stop'
-$port = 8765
 $root = (Get-Location).Path
-$prefix = "http://127.0.0.1:$port/"
+$basePort = 8765
+$maxTry = 12
 
 if (-not (Test-Path (Join-Path $root 'index.html'))) {
   Write-Host "ERROR: index.html not found in $root"
   exit 1
 }
 
-$listener = New-Object System.Net.HttpListener
-$listener.Prefixes.Add($prefix)
-try {
-  $listener.Start()
-} catch {
-  Write-Host "ERROR: cannot bind $prefix ($($_.Exception.Message))"
+$listener = $null
+$prefix = $null
+$boundPort = $null
+for ($i = 0; $i -lt $maxTry; $i++) {
+  $port = $basePort + $i
+  $candidate = "http://127.0.0.1:$port/"
+  $l = New-Object System.Net.HttpListener
+  $l.Prefixes.Add($candidate)
+  try {
+    $l.Start()
+    $listener = $l
+    $prefix = $candidate
+    $boundPort = $port
+    break
+  } catch {
+    try { $l.Close() } catch { }
+    Write-Host "Port $port busy, trying next..."
+  }
+}
+
+if (-not $listener) {
+  Write-Host "ERROR: no free port in $basePort..$($basePort + $maxTry - 1)."
+  Write-Host 'Close other SuperBirdCamera run.bat / serve.ps1 windows and retry.'
   exit 1
 }
 
-Write-Host "Listening on $prefix"
+Write-Host "Listening on $prefix (port $boundPort)"
 Write-Host 'Close this window to stop the server.'
 
 # 首次成功监听后再打开浏览器，避免 run.bat 的 start 竞态

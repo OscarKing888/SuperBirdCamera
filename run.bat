@@ -2,8 +2,6 @@
 setlocal EnableExtensions
 cd /d "%~dp0"
 
-set "URL=http://127.0.0.1:8765/"
-
 if not exist "index.html" (
   echo ERROR: index.html not found in %cd%
   echo Run build.bat from the repository root first.
@@ -17,7 +15,7 @@ if not exist "serve.ps1" (
 )
 
 echo Serving %cd%
-echo URL: %URL%
+echo Trying ports 8765-8776 if busy...
 echo Close this window to stop the server.
 echo Browser opens automatically after the server is listening.
 
