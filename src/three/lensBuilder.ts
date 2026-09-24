@@ -1,10 +1,18 @@
 import * as THREE from 'three';
 import type { LensGeometry, LensSegment } from '../types';
+import {
+  buildOpticalInterior,
+  buildSuperTeleShell,
+  isSuperTele,
+  type BuildStack,
+} from './superTele';
 
 export interface LensMeshBundle {
   group: THREE.Group;
   solidRoot: THREE.Group;
   wireRoot: THREE.Group;
+  /** 300mm+ 内部镜组（剖面） */
+  interiorRoot: THREE.Group;
   geometry: LensGeometry;
   dispose: () => void;
 }
@@ -552,19 +560,30 @@ export function buildLensMeshes(geo: LensGeometry): LensMeshBundle {
   const group = new THREE.Group();
   const solidRoot = new THREE.Group();
   const wireRoot = new THREE.Group();
-  group.add(solidRoot, wireRoot);
+  const interiorRoot = new THREE.Group();
+  group.add(solidRoot, wireRoot, interiorRoot);
 
   const materials: THREE.Material[] = [];
   const geometries: THREE.BufferGeometry[] = [];
   const cls = classifyLens(geo);
+  const stack: BuildStack = { materials, geometries };
 
-  addMountAssembly(solidRoot, materials, geometries, geo);
-  buildBarrelBody(solidRoot, materials, geometries, geo, cls);
-  addFrontAssembly(solidRoot, materials, geometries, geo, cls);
-  addDimensionMarks(group, materials, geometries, geo);
-  addWireShell(solidRoot, wireRoot, materials, geometries);
+  if (isSuperTele(geo) || cls === 'super-tele') {
+    // 300mm+：GM 白炮外壳 + 可切换内部镜组
+    buildSuperTeleShell(solidRoot, geo, stack);
+    buildOpticalInterior(interiorRoot, geo, stack);
+    addDimensionMarks(group, materials, geometries, geo);
+    addWireShell(solidRoot, wireRoot, materials, geometries);
+  } else {
+    addMountAssembly(solidRoot, materials, geometries, geo);
+    buildBarrelBody(solidRoot, materials, geometries, geo, cls);
+    addFrontAssembly(solidRoot, materials, geometries, geo, cls);
+    addDimensionMarks(group, materials, geometries, geo);
+    addWireShell(solidRoot, wireRoot, materials, geometries);
+  }
 
   wireRoot.visible = false;
+  interiorRoot.visible = false;
   group.traverse((obj) => {
     obj.frustumCulled = false;
   });
@@ -573,6 +592,7 @@ export function buildLensMeshes(geo: LensGeometry): LensMeshBundle {
     group,
     solidRoot,
     wireRoot,
+    interiorRoot,
     geometry: geo,
     dispose: () => {
       for (const g of geometries) g.dispose();

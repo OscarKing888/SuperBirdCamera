@@ -40,6 +40,7 @@ export function mountApp(root: HTMLElement): void {
         </select>
       </label>
       <label><input type="checkbox" id="wireframe" />线框叠加</label>
+      <label><input type="checkbox" id="interior" />内部结构</label>
       <label><input type="checkbox" id="rulers" checked />3D 标尺</label>
       <button id="viewTop" type="button">顶视图</button>
       <button id="viewPersp" type="button">透视</button>
@@ -381,6 +382,10 @@ export function mountApp(root: HTMLElement): void {
     sceneApi.setWireframeOverlay(state.wireframeOverlay);
   });
 
+  el<HTMLInputElement>('interior').addEventListener('change', (e) => {
+    sceneApi.setInteriorVisible((e.target as HTMLInputElement).checked);
+  });
+
   el<HTMLInputElement>('rulers').addEventListener('change', (e) => {
     sceneApi.setRulersVisible((e.target as HTMLInputElement).checked);
   });
@@ -430,6 +435,11 @@ export function mountApp(root: HTMLElement): void {
   renderCards();
 
   const params = new URLSearchParams(window.location.search);
+  if (params.get('interior') === '1') {
+    const box = el<HTMLInputElement>('interior');
+    box.checked = true;
+    sceneApi.setInteriorVisible(true);
+  }
   if (params.get('demo') === '1') {
     loadPresetDemo();
     const view = params.get('view');

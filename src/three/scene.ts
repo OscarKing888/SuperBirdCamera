@@ -17,6 +17,8 @@ export interface SceneApi {
   setAlignMode(mode: AlignMode): void;
   setWireframeOverlay(on: boolean): void;
   setLensWireframe(index: number, on: boolean): void;
+  /** 300mm+ 内部镜组剖面 */
+  setInteriorVisible(on: boolean): void;
   setRulersVisible(on: boolean): void;
   setView(preset: ViewPreset): void;
   resize(): void;
@@ -66,6 +68,7 @@ export function createScene(container: HTMLElement): SceneApi {
 
   let alignMode: AlignMode = 'mount';
   let wireframeOverlay = false;
+  let interiorVisible = false;
   const lensWire = new Map<number, boolean>();
   let bundles: LensMeshBundle[] = [];
   const labelSprites: THREE.Sprite[] = [];
@@ -161,6 +164,28 @@ export function createScene(container: HTMLElement): SceneApi {
       const forced = lensWire.get(index) ?? false;
       bundle.wireRoot.visible = wireframeOverlay || forced;
       bundle.solidRoot.visible = !forced || wireframeOverlay;
+      // 剖面：外壳半透明 + 显示内部镜组
+      bundle.interiorRoot.visible = interiorVisible;
+      const hasInterior = bundle.interiorRoot.children.length > 0;
+      if (interiorVisible && hasInterior) {
+        bundle.solidRoot.traverse((obj) => {
+          if (obj instanceof THREE.Mesh && obj.material && !Array.isArray(obj.material)) {
+            const m = obj.material as THREE.Material & { transparent?: boolean; opacity?: number };
+            m.transparent = true;
+            m.opacity = 0.16;
+            m.depthWrite = false;
+          }
+        });
+      } else {
+        bundle.solidRoot.traverse((obj) => {
+          if (obj instanceof THREE.Mesh && obj.material && !Array.isArray(obj.material)) {
+            const m = obj.material as THREE.Material & { transparent?: boolean; opacity?: number };
+            m.opacity = 1;
+            m.transparent = false;
+            m.depthWrite = true;
+          }
+        });
+      }
 
       const g = bundle.geometry;
       const label = makeTextSprite(
@@ -194,7 +219,7 @@ export function createScene(container: HTMLElement): SceneApi {
 
   function enableOrtho(width: number, height: number): void {
     const aspect = width / Math.max(height, 1);
-    const half = Math.max(sceneRadius * 1.15, 150);
+    const half = Math.max(sceneRadius * 0.85, 150);
     if (!ortho) {
       ortho = new THREE.OrthographicCamera(
         -half * aspect,
@@ -247,6 +272,10 @@ export function createScene(container: HTMLElement): SceneApi {
     setLensWireframe(index, on) {
       if (on) lensWire.set(index, true);
       else lensWire.delete(index);
+      layout();
+    },
+    setInteriorVisible(on) {
+      interiorVisible = on;
       layout();
     },
     setRulersVisible(on) {
