@@ -1,6 +1,6 @@
 ---
 feature: lens-optical-3d
-status: designed
+status: in-progress
 updated: 2026-02-25
 branch: session/lens-3d-htg7x9
 commits: # filled at delivery
@@ -63,8 +63,8 @@ commits: # filled at delivery
 
 2. **光圈**  
    变焦镜头按 `zoom` 在 `apertureMin–apertureMax` 间插值得 `N_zoom`，再  
-   `N_eff = N_zoom / (tcFactor * reducerFactor)`。  
-   入瞳直径 `D_e = f_eff / N_eff`（物体在无穷远）。
+   `N_eff = N_zoom * tcFactor * reducerFactor`（增距变慢、减焦变快）。  
+   入瞳直径 `D_e = f_base / N_zoom = f_eff / N_eff`（同一批前组，附加镜不改变入瞳）。
 
 3. **物方视场角**（全画幅 24×36）  
    `FOV_h = 2 * atan(18 / f_eff)`，宽角放大前组相对口径。
