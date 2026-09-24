@@ -13,7 +13,7 @@ export type AlignMode = 'mount' | 'front' | 'center';
 export type ViewPreset = 'perspective' | 'top' | 'front' | 'side';
 
 export interface SceneApi {
-  setLenses(items: LensGeometry[]): void;
+  setLenses(items: LensGeometry[], wireFlags?: boolean[]): void;
   setAlignMode(mode: AlignMode): void;
   setWireframeOverlay(on: boolean): void;
   setLensWireframe(index: number, on: boolean): void;
@@ -67,18 +67,21 @@ export function createScene(container: HTMLElement): SceneApi {
   let bundles: LensMeshBundle[] = [];
   const labelSprites: THREE.Sprite[] = [];
 
-  function clearLenses(): void {
+  function clearLabels(): void {
     for (const s of labelSprites) {
       scene.remove(s);
       (s.material as THREE.Material).dispose();
     }
     labelSprites.length = 0;
+  }
+
+  function clearLenses(): void {
+    clearLabels();
     for (const b of bundles) {
       scene.remove(b.group);
       b.dispose();
     }
     bundles = [];
-    lensWire.clear();
   }
 
   function frameScene(): void {
@@ -136,7 +139,11 @@ export function createScene(container: HTMLElement): SceneApi {
   }
 
   function layout(): void {
-    if (bundles.length === 0) return;
+    if (bundles.length === 0) {
+      clearLabels();
+      return;
+    }
+    clearLabels();
     const base = {
       length: Math.max(...bundles.map((b) => b.geometry.lengthTotal)),
     };
@@ -162,13 +169,21 @@ export function createScene(container: HTMLElement): SceneApi {
       scene.add(label);
     });
 
-    // 鸟放在镜头阵列前侧
-    bird.position.set(-Math.max(180, bundles[0]?.geometry.dFront ?? 180), 0, Math.max(200, base.length * 0.35));
+    const birdX = -Math.max(180, bundles[0]?.geometry.dFront ?? 180);
+    const birdZ = Math.max(200, base.length * 0.35);
+    bird.position.set(birdX, 0, birdZ);
+    rulers.setBirdMarker(birdX, birdZ);
     frameScene();
   }
 
-  function setLenses(items: LensGeometry[]): void {
+  function setLenses(items: LensGeometry[], wireFlags?: boolean[]): void {
     clearLenses();
+    if (wireFlags) {
+      lensWire.clear();
+      wireFlags.forEach((on, i) => {
+        if (on) lensWire.set(i, true);
+      });
+    }
     bundles = items.map((g) => buildLensMeshes(g));
     for (const b of bundles) scene.add(b.group);
     layout();
@@ -227,7 +242,8 @@ export function createScene(container: HTMLElement): SceneApi {
       layout();
     },
     setLensWireframe(index, on) {
-      lensWire.set(index, on);
+      if (on) lensWire.set(index, true);
+      else lensWire.delete(index);
       layout();
     },
     setRulersVisible(on) {
@@ -279,6 +295,7 @@ export function createScene(container: HTMLElement): SceneApi {
     dispose() {
       cancelAnimationFrame(raf);
       clearLenses();
+      lensWire.clear();
       rulers.dispose();
       controls.dispose();
       renderer.dispose();

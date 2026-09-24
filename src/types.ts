@@ -61,5 +61,7 @@ export interface LensGeometry {
   fovH: number;
   magnification: number;
   imageDistance: number;
+  /** 机械后焦距参考 mm */
+  bflRef: number;
   segments: LensSegment[];
 }

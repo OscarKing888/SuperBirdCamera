@@ -2,8 +2,10 @@ import * as THREE from 'three';
 
 /**
  * 低多边形参考鸟（单位 mm）。
- * 体长约 180mm，翼展约 280mm，站立于 y=0 地面。
+ * 身高约 120mm、翼展约 120mm，站立于 y=0 地面，供镜头比例对照。
  */
+export const BIRD_HEIGHT_MM = 120;
+
 export function createBird(): THREE.Group {
   const bird = new THREE.Group();
   const bodyMat = new THREE.MeshStandardMaterial({
@@ -66,6 +68,9 @@ export function createBird(): THREE.Group {
     bird.add(foot);
   }
 
+  // 原始几何头顶约 y=78，缩放到规格身高 120mm
+  const rawHeight = 78;
+  bird.scale.setScalar(BIRD_HEIGHT_MM / rawHeight);
   bird.position.set(0, 0, 0);
   return bird;
 }

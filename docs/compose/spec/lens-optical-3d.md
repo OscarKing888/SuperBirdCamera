@@ -83,9 +83,9 @@ commits: # filled at delivery
      `focusTravel = clamp(0.02 * focusDistance_or_2000, 0.5, 25)`（无穷远用 2000）。
    - **中组变焦筒** `midBarrel`：直径 `lerp(D_rear, D_front, 0.45)`。  
      内变焦长度 `L_mid = zoomSpan`；外变焦 `L_mid = zoomSpan * (0.35 + 0.65 * zoom)`。  
-     `zoomSpan = clamp(0.12 * |f_max - f_min| + 0.08 * f_max, 8, 0.55 * f_est)`，定焦取 `8`。
+     `zoomSpan = clamp(0.12 * |f_max - f_min| + 0.08 * f_max, 8, max(8, 0.55 * f_est))`，定焦取 `8`。
    - **前组筒** `frontBarrel`：直径 `D_front`，长度  
-     `L_front = clamp(0.22 * f_eff + 0.35 * D_front, 18, 0.45 * f_est_total)`。  
+     `L_front = clamp(0.22 * f_eff + 0.35 * D_front, 18, max(18, 0.45 * f_est_total))`。  
      前玉用球冠玻璃：曲率半径 `R ≈ 0.9 * D_front`，厚度 `T_front ≈ 0.12 * D_front`。
    - **遮光罩接口环**（可选装饰环，不计入光学长）。
 
@@ -93,7 +93,7 @@ commits: # filled at delivery
    `L_total = mountShank + L_rear + L_mid + L_front + T_front_effective`。
 
    **主点/像距参考量**（用于信息面板，非网格）：  
-   - 理想薄透镜像距 `v = 1 / (1/f - 1/u)`，`u` 为对焦距离（同号约定：物距取正）。  
+   - 理想薄透镜像距 `v = 1 / (1/f - 1/u)`，`u` 为对焦距离（同号约定：物距取正）；`u→∞` 时 `v=f`，`β=0`。  
    - 后焦距参考 `BFL_ref = flange + L_rear * 0.25`（机械后焦近似，用于说明后组相对位置）。  
    - 放大率 `β = |f_eff / (u - f_eff)|`。
 
@@ -108,7 +108,7 @@ commits: # filled at delivery
 
 - 全部程序化 Three.js 网格（圆柱段 + 环 + 球冠前玉 + 非金属镜筒 PBR + 玻璃感前玉）。
 - 镜头局部坐标系：**卡口面 z=0**，光轴 +z 指向物方；场景中多镜头按对齐策略摆放。
-- **鸟参考**：低多边形程序化鸟（体/翼/尾/喙），默认立于 z 轴旁地面，身高/翼展约 120mm，材质可辨。
+- **鸟参考**：低多边形程序化鸟（体/翼/尾/喙），默认立于 z 轴旁地面，身高/翼展约 120mm，身高标尺与鸟同位，材质可辨。
 - **3D 标尺**：场景地面 10mm 细网格 + 100mm 粗网格；沿 X 的毫米标尺条（每 10/50/100mm 刻度）；镜头旁自动附尺寸标注线（长度/前口径）。
 - **对齐选项** `alignMode`：`mount`（卡口面共面，默认）\| `front`（前玉顶共面）\| `center`（几何中心共面）。顶视图（正交俯视）一键切换。
 - **线框叠加** `wireframeOverlay`：每镜头实体材质 + 叠加 `WireframeGeometry` 线框层，可全局开关；对比时可对指定镜头强制线框。
@@ -120,7 +120,7 @@ commits: # filled at delivery
 - **镜头列表**：每卡片显示摘要（`E · 600mm · f/0.9 · Ø667 · L≈…`），可删除、高亮、单独线框。
 - **全局条**：对齐模式、线框总开关、顶视/透视切换、标尺开关、重置相机。
 - **示例预设按钮**：一键载入题述两组镜头。
-- 非法输入（焦距≤0、光圈&lt;0.7、变焦 min&gt;max）内联报错，不加入列表。
+- 非法输入（焦距≤0、光圈&lt;0.7、变焦 min&gt;max）内联报错，不加入列表；UI **拒绝** 而非静默交换 min/max。
 
 ### 错误行为
 

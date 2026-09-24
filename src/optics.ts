@@ -78,11 +78,12 @@ export function computeOptics(input: LensInput): LensGeometry {
   const dRear = mount.outerDiameter * 1.15;
   const dMid = lerp(dRear, dFront, 0.45);
 
-  const focusU =
-    !Number.isFinite(input.focusDistance) || input.focusDistance <= 0
-      ? 2000
-      : input.focusDistance;
-  const focusTravel = clamp(0.02 * focusU, 0.5, 25);
+  // 对焦行程按有限物距估算；无穷远只影响高斯光学量，不把 u 伪造成 2000
+  const isInfinity =
+    !Number.isFinite(input.focusDistance) || input.focusDistance <= 0;
+  const focusTravel = isInfinity
+    ? 1.5
+    : clamp(0.02 * input.focusDistance, 0.5, 25);
 
   const lMount = Math.max(8, mount.flangeDistance * 0.35);
   const lAccessory = TC_LENGTH[input.teleconverter] + REDUCER_LENGTH[input.reducer];
@@ -91,22 +92,21 @@ export function computeOptics(input: LensInput): LensGeometry {
   const lRear = Math.max(mount.flangeDistance * 0.55, 0.18 * fEff) + focusTravel;
 
   const focalSpan = Math.abs(input.focalMax - input.focalMin);
-  const zoomSpanRaw = clamp(
-    0.12 * focalSpan + 0.08 * input.focalMax,
-    8,
-    Math.max(12, 0.55 * fEff),
-  );
-  const zoomSpan = isZoom ? zoomSpanRaw : 8;
-  const lMid =
-    input.barrelStyle === 'external'
+  const fEstTotal = input.focalMax * tc * rd;
+  const zoomSpan = isZoom
+    ? clamp(0.12 * focalSpan + 0.08 * input.focalMax, 8, Math.max(8, 0.55 * fEstTotal))
+    : 8;
+  // 定焦无变焦行程，外/内变焦均取固定中组长
+  const lMid = !isZoom
+    ? zoomSpan
+    : input.barrelStyle === 'external'
       ? zoomSpan * (0.35 + 0.65 * zoom)
       : zoomSpan;
 
-  const fEstTotal = input.focalMax * tc * rd;
   const lFront = clamp(
     0.22 * fEff + 0.35 * dFront,
     18,
-    Math.max(20, 0.45 * fEstTotal),
+    Math.max(18, 0.45 * fEstTotal),
   );
 
   const frontGlassThickness = clamp(0.12 * dFront, 2, 0.2 * Math.max(fEstTotal, 40));
@@ -116,10 +116,18 @@ export function computeOptics(input: LensInput): LensGeometry {
 
   const fovH = 2 * Math.atan(SENSOR_HALF_WIDTH / fEff) * (180 / Math.PI);
 
-  // 薄透镜成像：u 为正物距
-  const u = focusU;
-  const imageDistance = u <= fEff * 1.0001 ? fEff * 2 : (u * fEff) / (u - fEff);
-  const magnification = Math.abs(fEff / (u - fEff));
+  // 薄透镜成像：u→∞ ⇒ v=f，β=0
+  const bflRef = mount.flangeDistance + lRear * 0.25;
+  let imageDistance: number;
+  let magnification: number;
+  if (isInfinity) {
+    imageDistance = fEff;
+    magnification = 0;
+  } else {
+    const u = input.focusDistance;
+    imageDistance = u <= fEff * 1.0001 ? fEff * 2 : (u * fEff) / (u - fEff);
+    magnification = Math.abs(fEff / (u - fEff));
+  }
 
   const segments: LensSegment[] = [];
   let z = 0;
@@ -201,6 +209,7 @@ export function computeOptics(input: LensInput): LensGeometry {
     fovH,
     magnification,
     imageDistance,
+    bflRef,
     segments,
   };
 }

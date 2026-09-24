@@ -52,12 +52,15 @@ function makeCylinder(
 }
 
 function makeFrontGlass(diameter: number, thickness: number): THREE.Mesh {
-  // 球冠近似前玉
-  const radius = Math.max(diameter * 0.5 * 1.05, thickness * 2);
+  // 球冠近似前玉：曲率半径 R≈0.9·D（规格），沿局部 +Y 是冠高
+  const radius = Math.max(diameter * 0.9, thickness * 2);
+  const capHeight = radius * (1 - Math.cos(0.55));
   const sphere = new THREE.SphereGeometry(radius, 48, 24, 0, Math.PI * 2, 0, 0.55);
-  const mesh = new THREE.Mesh(sphere, barrelMaterial('frontGlass'));
-  mesh.scale.z = thickness / (radius * (1 - Math.cos(0.55)));
-  mesh.rotation.x = -Math.PI / 2;
+  const mat = barrelMaterial('frontGlass');
+  const mesh = new THREE.Mesh(sphere, mat);
+  mesh.scale.y = thickness / capHeight;
+  // +Y 冠轴转到光轴 +Z
+  mesh.rotation.x = Math.PI / 2;
   return mesh;
 }
 
@@ -95,6 +98,7 @@ export function buildLensMeshes(geo: LensGeometry): LensMeshBundle {
     let mesh: THREE.Mesh;
     if (seg.kind === 'frontGlass') {
       mesh = makeFrontGlass(seg.diameter, length);
+      materials.push(mesh.material as THREE.Material);
     } else {
       const mat = barrelMaterial(seg.kind);
       materials.push(mat);

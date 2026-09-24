@@ -144,18 +144,23 @@ export function mountApp(root: HTMLElement): void {
   }
 
   function readInput(): LensInput {
+    const isPrime = focalKind.value === 'prime';
     const fMin = Number(focalMin.value);
-    const fMax = focalKind.value === 'prime' ? fMin : Number(focalMax.value);
+    const fMax = isPrime ? fMin : Number(focalMax.value);
     const aMin = Number(apertureMin.value);
-    const aMax = focalKind.value === 'prime' ? aMin : Number(apertureMax.value);
+    const aMax = isPrime ? aMin : Number(apertureMax.value);
     if (!Number.isFinite(fMin) || !Number.isFinite(fMax)) throw new Error('焦距无效');
+    if (!isPrime && fMin > fMax) throw new Error('焦距区间无效：最小值不能大于最大值');
+    if (!isPrime && aMin > aMax) {
+      throw new Error('光圈区间无效：最大光圈不能小于最小光圈');
+    }
     return {
       mount: mount.value as MountId,
-      focalMin: Math.min(fMin, fMax),
-      focalMax: Math.max(fMin, fMax),
-      apertureMin: Math.min(aMin, aMax),
-      apertureMax: Math.max(aMin, aMax),
-      zoom: Number(zoom.value),
+      focalMin: fMin,
+      focalMax: fMax,
+      apertureMin: aMin,
+      apertureMax: aMax,
+      zoom: isPrime ? 1 : Number(zoom.value),
       focusDistance: parseFocus(focusDistance.value),
       teleconverter: tc.value as TeleconverterId,
       reducer: reducer.value as ReducerId,
@@ -176,6 +181,7 @@ export function mountApp(root: HTMLElement): void {
         `镜身长    ${formatLength(g.lengthTotal)}`,
         `水平 FOV  ${g.fovH.toFixed(2)}°`,
         `像距/放大 ${g.imageDistance.toFixed(1)} mm / ${(g.magnification * 100).toFixed(3)}%`,
+        `后焦参考  ${g.bflRef.toFixed(1)} mm`,
         `卡口法兰  ${MOUNTS[g.input.mount].name} · ${MOUNTS[g.input.mount].flangeDistance} mm`,
       ].join('\n');
     } catch (err) {
@@ -192,42 +198,65 @@ export function mountApp(root: HTMLElement): void {
         g.input.name ??
         `${MOUNTS[g.input.mount].name} ${g.fEff.toFixed(0)}mm`;
       const isZoom = g.input.focalMax > g.input.focalMin + 1e-6;
-      card.innerHTML = `
-        <h3>${label}</h3>
-        <div class="kv">
-          ${MOUNTS[g.input.mount].name} · ${g.fBase.toFixed(0)}mm · f/${g.nEff.toFixed(2)}<br/>
-          Ø前 ${g.dFront.toFixed(1)} · Ø入瞳 ${g.dEntrance.toFixed(1)} · L ${g.lengthTotal.toFixed(1)}<br/>
-          FOV ${g.fovH.toFixed(2)}° · ${g.input.barrelStyle === 'internal' ? '内变焦' : '外变焦'}
-        </div>
-        ${isZoom ? `<div class="field" style="margin-top:8px"><label>变焦</label><input data-act="zoom" type="range" min="0" max="1" step="0.01" value="${g.input.zoom}" /></div>` : ''}
-        <div class="card-actions">
-          <button data-act="wire" type="button">${state.lensWire[index] ? '取消线框' : '线框'}</button>
-          <button data-act="del" type="button">删除</button>
-        </div>
-      `;
-      card.querySelector<HTMLInputElement>('[data-act="zoom"]')?.addEventListener('input', (e) => {
-        const z = Number((e.target as HTMLInputElement).value);
-        state.lenses[index] = computeOptics({ ...state.lenses[index].input, zoom: z });
-        sceneApi.setLenses(state.lenses);
-        const g2 = state.lenses[index];
-        const kv = card.querySelector('.kv');
-        if (kv) {
-          kv.innerHTML = `${MOUNTS[g2.input.mount].name} · ${g2.fBase.toFixed(0)}mm · f/${g2.nEff.toFixed(2)}<br/>
-          Ø前 ${g2.dFront.toFixed(1)} · Ø入瞳 ${g2.dEntrance.toFixed(1)} · L ${g2.lengthTotal.toFixed(1)}<br/>
-          FOV ${g2.fovH.toFixed(2)}° · ${g2.input.barrelStyle === 'internal' ? '内变焦' : '外变焦'}`;
-        }
-      });
-      card.querySelector('[data-act="wire"]')?.addEventListener('click', () => {
+      const h3 = document.createElement('h3');
+      h3.textContent = label;
+      card.appendChild(h3);
+      const kv = document.createElement('div');
+      kv.className = 'kv';
+      card.appendChild(kv);
+      const writeKv = (g2: LensGeometry) => {
+        kv.textContent = '';
+        const line1 = document.createElement('div');
+        line1.textContent = `${MOUNTS[g2.input.mount].name} · ${g2.fBase.toFixed(0)}mm · f/${g2.nEff.toFixed(2)}`;
+        const line2 = document.createElement('div');
+        line2.textContent = `Ø前 ${g2.dFront.toFixed(1)} · Ø入瞳 ${g2.dEntrance.toFixed(1)} · L ${g2.lengthTotal.toFixed(1)}`;
+        const line3 = document.createElement('div');
+        line3.textContent = `FOV ${g2.fovH.toFixed(2)}° · ${g2.input.barrelStyle === 'internal' ? '内变焦' : '外变焦'}`;
+        kv.append(line1, line2, line3);
+      };
+      writeKv(g);
+      if (isZoom) {
+        const field = document.createElement('div');
+        field.className = 'field';
+        field.style.marginTop = '8px';
+        const lab = document.createElement('label');
+        lab.textContent = '变焦';
+        const slider = document.createElement('input');
+        slider.type = 'range';
+        slider.min = '0';
+        slider.max = '1';
+        slider.step = '0.01';
+        slider.value = String(g.input.zoom);
+        slider.addEventListener('input', () => {
+          const z = Number(slider.value);
+          state.lenses[index] = computeOptics({ ...state.lenses[index].input, zoom: z });
+          sceneApi.setLenses(state.lenses, state.lensWire);
+          writeKv(state.lenses[index]);
+        });
+        field.append(lab, slider);
+        card.appendChild(field);
+      }
+      const actions = document.createElement('div');
+      actions.className = 'card-actions';
+      const wireBtn = document.createElement('button');
+      wireBtn.type = 'button';
+      wireBtn.textContent = state.lensWire[index] ? '取消线框' : '线框';
+      wireBtn.addEventListener('click', () => {
         state.lensWire[index] = !state.lensWire[index];
         sceneApi.setLensWireframe(index, state.lensWire[index]);
         renderCards();
       });
-      card.querySelector('[data-act="del"]')?.addEventListener('click', () => {
+      const delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.textContent = '删除';
+      delBtn.addEventListener('click', () => {
         state.lenses.splice(index, 1);
         state.lensWire.splice(index, 1);
-        sceneApi.setLenses(state.lenses);
+        sceneApi.setLenses(state.lenses, state.lensWire);
         renderCards();
       });
+      actions.append(wireBtn, delBtn);
+      card.appendChild(actions);
       cards.appendChild(card);
     });
     if (state.lenses.length === 0) {
@@ -239,7 +268,7 @@ export function mountApp(root: HTMLElement): void {
     const g = computeOptics(input);
     state.lenses.push(g);
     state.lensWire.push(false);
-    sceneApi.setLenses(state.lenses);
+    sceneApi.setLenses(state.lenses, state.lensWire);
     renderCards();
   }
 
@@ -256,6 +285,7 @@ export function mountApp(root: HTMLElement): void {
     formError.textContent = '';
     state.lenses = [];
     state.lensWire = [];
+    sceneApi.setLenses(state.lenses, state.lensWire);
     pushLens({
       mount: 'e',
       focalMin: 600,
@@ -289,7 +319,7 @@ export function mountApp(root: HTMLElement): void {
   el<HTMLButtonElement>('clearAll').addEventListener('click', () => {
     state.lenses = [];
     state.lensWire = [];
-    sceneApi.setLenses(state.lenses);
+    sceneApi.setLenses(state.lenses, state.lensWire);
     renderCards();
   });
 
@@ -326,7 +356,7 @@ export function mountApp(root: HTMLElement): void {
     if (prime) {
       focalMax.value = focalMin.value;
       apertureMax.value = apertureMin.value;
-      zoom.value = '0';
+      zoom.value = '1';
     }
     refreshPreview();
   });
@@ -347,11 +377,6 @@ export function mountApp(root: HTMLElement): void {
     node.addEventListener('input', refreshPreview);
     node.addEventListener('change', refreshPreview);
   }
-
-  zoom.addEventListener('input', () => {
-    // 变焦滑杆实时预览当前已添加的最后一组？规格为添加前实时摘要 + 列表内可再调。
-    refreshPreview();
-  });
 
   refreshPreview();
   renderCards();

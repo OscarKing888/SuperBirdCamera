@@ -156,5 +156,35 @@ describe('computeOptics', () => {
       computeOptics({ ...baseInput, focalMin: 100, focalMax: 50 }),
     ).toThrow();
     expect(() => computeOptics({ ...baseInput, apertureMin: 0.5 })).toThrow();
+    expect(() =>
+      computeOptics({ ...baseInput, mount: 'nope' as never }),
+    ).toThrow();
+  });
+
+  it('infinity focus obeys thin lens v=f and beta=0', () => {
+    const g = computeOptics({
+      ...baseInput,
+      focalMin: 600,
+      focalMax: 600,
+      apertureMin: 0.9,
+      apertureMax: 0.9,
+      focusDistance: Infinity,
+    });
+    expect(g.imageDistance).toBeCloseTo(600, 6);
+    expect(g.magnification).toBe(0);
+    expect(g.bflRef).toBeGreaterThan(0);
+  });
+
+  it('prime external barrel keeps fixed mid length', () => {
+    const g = computeOptics({
+      ...baseInput,
+      focalMin: 50,
+      focalMax: 50,
+      apertureMin: 1.4,
+      apertureMax: 1.4,
+      zoom: 0,
+      barrelStyle: 'external',
+    });
+    expect(g.lMid).toBeCloseTo(8, 6);
   });
 });
