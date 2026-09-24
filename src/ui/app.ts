@@ -14,6 +14,8 @@ interface AppState {
   alignMode: AlignMode;
   wireframeOverlay: boolean;
   lensWire: boolean[];
+  /** 当前选中（可编辑）的镜头下标 */
+  selectedIndex: number | null;
 }
 
 const state: AppState = {
@@ -21,6 +23,7 @@ const state: AppState = {
   alignMode: 'mount',
   wireframeOverlay: false,
   lensWire: [],
+  selectedIndex: null,
 };
 
 let sceneApi: SceneApi;
@@ -50,6 +53,7 @@ export function mountApp(root: HTMLElement): void {
     </header>
     <aside class="panel">
       <h2>镜头参数</h2>
+      <div class="sel-hint" id="selHint">未选中镜头 · 可直接「添加镜头」</div>
       <div class="field"><label>名称</label><input id="name" placeholder="可选" /></div>
       <div class="field"><label>卡口</label>
         <select id="mount">${MOUNT_IDS.map((id: MountId) => `<option value="${id}">${MOUNTS[id].name}</option>`).join('')}</select>
@@ -101,6 +105,8 @@ export function mountApp(root: HTMLElement): void {
       <div class="error" id="formError"></div>
       <div class="actions">
         <button id="addLens" type="button">添加镜头</button>
+        <button id="updateLens" type="button" disabled>更新所选</button>
+        <button id="deselect" type="button" disabled>取消选中</button>
         <button id="presetDemo" type="button">载入示例两组</button>
         <button id="presetGallery" type="button">现代图鉴</button>
         <button id="clearAll" type="button">清空</button>
@@ -136,6 +142,9 @@ export function mountApp(root: HTMLElement): void {
   const formError = el<HTMLDivElement>('formError');
   const opticsMeta = el<HTMLDivElement>('opticsMeta');
   const cards = el<HTMLElement>('cards');
+  const selHint = el<HTMLDivElement>('selHint');
+  const updateLensBtn = el<HTMLButtonElement>('updateLens');
+  const deselectBtn = el<HTMLButtonElement>('deselect');
 
   function parseFocus(value: string): number {
     const t = value.trim().toLowerCase();
@@ -171,6 +180,41 @@ export function mountApp(root: HTMLElement): void {
     };
   }
 
+  function fillForm(g: LensGeometry): void {
+    const input = g.input;
+    name.value = input.name ?? '';
+    mount.value = input.mount;
+    const isPrime = input.focalMax <= input.focalMin + 1e-6;
+    focalKind.value = isPrime ? 'prime' : 'zoom';
+    focalMin.value = String(input.focalMin);
+    focalMax.value = String(input.focalMax);
+    apertureMin.value = String(input.apertureMin);
+    apertureMax.value = String(input.apertureMax);
+    zoom.value = String(input.zoom);
+    focusDistance.value = Number.isFinite(input.focusDistance) ? String(input.focusDistance) : 'inf';
+    tc.value = input.teleconverter;
+    reducer.value = input.reducer;
+    barrel.value = input.barrelStyle;
+    focalMax.disabled = isPrime;
+    apertureMax.disabled = isPrime;
+    zoom.disabled = isPrime;
+    refreshPreview();
+  }
+
+  function setSelection(index: number | null): void {
+    state.selectedIndex = index;
+    updateLensBtn.disabled = index === null;
+    deselectBtn.disabled = index === null;
+    if (index === null) {
+      selHint.textContent = '未选中镜头 · 可直接「添加镜头」';
+    } else {
+      const g = state.lenses[index];
+      selHint.textContent = `已选中 #${index + 1} · 改参数后点「更新所选」`;
+      if (g) fillForm(g);
+    }
+    renderCards();
+  }
+
   function refreshPreview(): void {
     formError.textContent = '';
     try {
@@ -191,11 +235,72 @@ export function mountApp(root: HTMLElement): void {
     }
   }
 
+  function reorderLens(from: number, to: number): void {
+    if (from === to || from < 0 || to < 0 || from >= state.lenses.length || to >= state.lenses.length) {
+      return;
+    }
+    const [g] = state.lenses.splice(from, 1);
+    state.lenses.splice(to, 0, g);
+    const [w] = state.lensWire.splice(from, 1);
+    state.lensWire.splice(to, 0, w);
+    if (state.selectedIndex === from) state.selectedIndex = to;
+    else if (state.selectedIndex !== null) {
+      const s = state.selectedIndex;
+      if (from < s && to >= s) state.selectedIndex = s - 1;
+      else if (from > s && to <= s) state.selectedIndex = s + 1;
+    }
+    sceneApi.setLenses(state.lenses, state.lensWire);
+    setSelection(state.selectedIndex);
+  }
+
   function renderCards(): void {
     cards.innerHTML = '';
+    let dragFrom = -1;
+
     state.lenses.forEach((g, index) => {
       const card = document.createElement('article');
-      card.className = 'card' + (state.lensWire[index] ? ' active' : '');
+      card.className =
+        'card' +
+        (state.selectedIndex === index ? ' selected' : '') +
+        (state.lensWire[index] ? ' active' : '');
+      card.title = '拖动调整顺序 · 点击选中编辑';
+      card.draggable = true;
+      card.dataset.index = String(index);
+
+      const grip = document.createElement('span');
+      grip.className = 'grip';
+      grip.textContent = '⠿';
+      card.appendChild(grip);
+
+      card.addEventListener('dragstart', (e) => {
+        dragFrom = index;
+        card.classList.add('dragging');
+        e.dataTransfer?.setData('text/plain', String(index));
+        if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
+      });
+      card.addEventListener('dragend', () => {
+        card.classList.remove('dragging');
+        cards.querySelectorAll('.card').forEach((c) => c.classList.remove('drag-over'));
+        dragFrom = -1;
+      });
+      card.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+        card.classList.add('drag-over');
+      });
+      card.addEventListener('dragleave', () => card.classList.remove('drag-over'));
+      card.addEventListener('drop', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        card.classList.remove('drag-over');
+        const raw = e.dataTransfer?.getData('text/plain') ?? String(dragFrom);
+        const from = Number(raw);
+        if (Number.isFinite(from) && from >= 0) reorderLens(from, index);
+      });
+      card.addEventListener('click', (e) => {
+        if ((e.target as HTMLElement).closest('button, input, select, .grip')) return;
+        setSelection(index);
+      });
       const label =
         g.input.name ??
         `${MOUNTS[g.input.mount].name} ${g.fEff.toFixed(0)}mm`;
@@ -248,16 +353,28 @@ export function mountApp(root: HTMLElement): void {
         sceneApi.setLensWireframe(index, state.lensWire[index]);
         renderCards();
       });
+      const editBtn = document.createElement('button');
+      editBtn.type = 'button';
+      editBtn.textContent = '编辑';
+      editBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        setSelection(index);
+      });
       const delBtn = document.createElement('button');
       delBtn.type = 'button';
       delBtn.textContent = '删除';
-      delBtn.addEventListener('click', () => {
+      delBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
         state.lenses.splice(index, 1);
         state.lensWire.splice(index, 1);
+        if (state.selectedIndex === index) setSelection(null);
+        else if (state.selectedIndex !== null && state.selectedIndex > index) {
+          setSelection(state.selectedIndex - 1);
+        }
         sceneApi.setLenses(state.lenses, state.lensWire);
         renderCards();
       });
-      actions.append(wireBtn, delBtn);
+      actions.append(wireBtn, editBtn, delBtn);
       card.appendChild(actions);
       cards.appendChild(card);
     });
@@ -278,10 +395,27 @@ export function mountApp(root: HTMLElement): void {
     formError.textContent = '';
     try {
       pushLens(readInput());
+      setSelection(state.lenses.length - 1);
     } catch (err) {
       formError.textContent = err instanceof Error ? err.message : String(err);
     }
   });
+
+  updateLensBtn.addEventListener('click', () => {
+    formError.textContent = '';
+    const idx = state.selectedIndex;
+    if (idx === null) return;
+    try {
+      const g = computeOptics(readInput());
+      state.lenses[idx] = g;
+      sceneApi.setLenses(state.lenses, state.lensWire);
+      setSelection(idx);
+    } catch (err) {
+      formError.textContent = err instanceof Error ? err.message : String(err);
+    }
+  });
+
+  deselectBtn.addEventListener('click', () => setSelection(null));
 
   function loadPresetDemo(): void {
     formError.textContent = '';

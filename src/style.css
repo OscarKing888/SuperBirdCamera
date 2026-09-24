@@ -180,6 +180,13 @@ body {
   overflow-x: auto;
 }
 
+.sel-hint {
+  margin: -4px 0 10px;
+  font-size: 11px;
+  color: var(--accent-2);
+  line-height: 1.4;
+}
+
 .card {
   min-width: 240px;
   border: 1px solid var(--panel-border);
@@ -187,6 +194,36 @@ body {
   padding: 10px 12px;
   background: #10182a;
   font-size: 12px;
+  cursor: grab;
+  position: relative;
+}
+
+.card:active {
+  cursor: grabbing;
+}
+
+.card.selected {
+  border-color: var(--accent-2);
+  box-shadow: 0 0 0 1px rgba(126, 240, 255, 0.35);
+}
+
+.card.dragging {
+  opacity: 0.45;
+}
+
+.card.drag-over {
+  border-color: var(--accent);
+  border-style: dashed;
+}
+
+.card .grip {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  color: var(--muted);
+  letter-spacing: 1px;
+  font-size: 11px;
+  user-select: none;
 }
 
 .card.active {
