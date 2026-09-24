@@ -43,16 +43,19 @@ export function createScene(container: HTMLElement): SceneApi {
   controls.enableDamping = true;
   controls.target.set(120, 40, 120);
 
-  scene.add(new THREE.AmbientLight(0xc8d8f0, 0.75));
-  const key = new THREE.DirectionalLight(0xffffff, 1.8);
-  key.position.set(300, 500, 200);
+  scene.add(new THREE.AmbientLight(0xb8c8e0, 0.55));
+  const key = new THREE.DirectionalLight(0xffffff, 2.1);
+  key.position.set(280, 420, 320);
   scene.add(key);
-  const fill = new THREE.DirectionalLight(0x9db8ff, 0.7);
-  fill.position.set(-400, 120, -300);
+  const fill = new THREE.DirectionalLight(0xa8c0ff, 0.65);
+  fill.position.set(-360, 140, -220);
   scene.add(fill);
-  const rim = new THREE.DirectionalLight(0x7ef0ff, 0.45);
-  rim.position.set(0, 200, -500);
+  const rim = new THREE.DirectionalLight(0x9ad8ff, 0.85);
+  rim.position.set(80, 240, -420);
   scene.add(rim);
+  const under = new THREE.DirectionalLight(0x6a8ccc, 0.25);
+  under.position.set(0, -200, 100);
+  scene.add(under);
 
   const rulers = createRulers();
   scene.add(rulers.group);
@@ -131,7 +134,7 @@ export function createScene(container: HTMLElement): SceneApi {
     sceneRadius = radius;
     const dist = Math.max(radius * 1.7, 320);
     controls.target.copy(center);
-    camera.position.set(center.x + dist * 0.55, center.y + dist * 0.85, center.z + dist * 0.7);
+    camera.position.set(center.x + dist * 0.72, center.y + dist * 0.48, center.z + dist * 0.88);
     camera.near = Math.max(0.5, dist * 0.005);
     camera.far = dist * 30;
     camera.updateProjectionMatrix();
@@ -257,7 +260,8 @@ export function createScene(container: HTMLElement): SceneApi {
         case 'perspective':
           enablePerspective();
           camera.up.set(0, 1, 0);
-          camera.position.set(target.x + dist * 0.7, target.y + dist * 0.55, target.z + dist * 0.85);
+          camera.position.set(target.x + dist * 0.72, target.y + dist * 0.48, target.z + dist * 0.88);
+          camera.lookAt(target);
           activeCam = camera;
           controls.object = camera;
           break;

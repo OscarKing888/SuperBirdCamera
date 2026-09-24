@@ -101,6 +101,7 @@ export function mountApp(root: HTMLElement): void {
       <div class="actions">
         <button id="addLens" type="button">添加镜头</button>
         <button id="presetDemo" type="button">载入示例两组</button>
+        <button id="presetGallery" type="button">现代图鉴</button>
         <button id="clearAll" type="button">清空</button>
       </div>
       <div class="meta" id="opticsMeta">填写参数后将显示光学推算摘要。</div>
@@ -314,7 +315,54 @@ export function mountApp(root: HTMLElement): void {
     });
   }
 
+  function loadPresetGallery(): void {
+    formError.textContent = '';
+    state.lenses = [];
+    state.lensWire = [];
+    sceneApi.setLenses(state.lenses, state.lensWire);
+    pushLens({
+      mount: 'e',
+      focalMin: 85,
+      focalMax: 85,
+      apertureMin: 1.4,
+      apertureMax: 1.4,
+      zoom: 1,
+      focusDistance: Infinity,
+      teleconverter: 'none',
+      reducer: 'none',
+      barrelStyle: 'internal',
+      name: '85mm f/1.4 定焦',
+    });
+    pushLens({
+      mount: 'e',
+      focalMin: 24,
+      focalMax: 70,
+      apertureMin: 2.8,
+      apertureMax: 2.8,
+      zoom: 0.5,
+      focusDistance: Infinity,
+      teleconverter: 'none',
+      reducer: 'none',
+      barrelStyle: 'internal',
+      name: '24–70mm f/2.8',
+    });
+    pushLens({
+      mount: 'e',
+      focalMin: 70,
+      focalMax: 200,
+      apertureMin: 2.8,
+      apertureMax: 2.8,
+      zoom: 0.7,
+      focusDistance: Infinity,
+      teleconverter: 'none',
+      reducer: 'none',
+      barrelStyle: 'external',
+      name: '70–200mm f/2.8',
+    });
+  }
+
   el<HTMLButtonElement>('presetDemo').addEventListener('click', loadPresetDemo);
+  el<HTMLButtonElement>('presetGallery').addEventListener('click', loadPresetGallery);
 
   el<HTMLButtonElement>('clearAll').addEventListener('click', () => {
     state.lenses = [];
@@ -381,9 +429,16 @@ export function mountApp(root: HTMLElement): void {
   refreshPreview();
   renderCards();
 
-  if (new URLSearchParams(window.location.search).get('demo') === '1') {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('demo') === '1') {
     loadPresetDemo();
-    const view = new URLSearchParams(window.location.search).get('view');
+    const view = params.get('view');
+    if (view === 'top' || view === 'front' || view === 'side' || view === 'perspective') {
+      sceneApi.setView(view);
+    }
+  } else if (params.get('gallery') === '1') {
+    loadPresetGallery();
+    const view = params.get('view');
     if (view === 'top' || view === 'front' || view === 'side' || view === 'perspective') {
       sceneApi.setView(view);
     }
