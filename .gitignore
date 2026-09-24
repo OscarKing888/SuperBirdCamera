@@ -31,6 +31,7 @@ go.work.sum
 node_modules/
 dist/
 .vite/
+.shots/
 
 # Session task worktrees (feature-branch-merge protocol)
 .worktrees/

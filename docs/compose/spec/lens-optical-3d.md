@@ -1,9 +1,9 @@
 ---
 feature: lens-optical-3d
-status: delivered
+status: in-progress
 updated: 2026-02-25
 branch: session/lens-3d-htg7x9
-commits: be9c6bbc472efe8f89ba91e29b3cb9b2c4305e40..21a29ddfcb2fcb99eb7c749983a3575b9d10a904
+commits: # filled at delivery
 ---
 
 # 镜头光学 3D 对比台
@@ -124,7 +124,7 @@ commits: be9c6bbc472efe8f89ba91e29b3cb9b2c4305e40..21a29ddfcb2fcb99eb7c749983a35
 
 - **参数台**：卡口、焦距（定焦/变焦切换）、光圈（定/变）、对焦距离、变焦位置、增距/减焦、内/外变焦、名称。
 - **镜头列表**：每卡片显示摘要（`E · 600mm · f/0.9 · Ø667 · L≈…`），可删除、高亮、单独线框。
-- **全局条**：对齐模式、线框总开关、顶视/透视切换、标尺开关、重置相机。
+- **全局条**：对齐模式、线框总开关、剖面/内部开关、顶视/透视切换、标尺开关、重置相机。
 - **示例预设按钮**：一键载入题述两组镜头。
 - 非法输入（焦距≤0、光圈&lt;0.7、变焦 min&gt;max）内联报错，不加入列表；UI **拒绝** 而非静默交换 min/max。
 
@@ -133,6 +133,29 @@ commits: be9c6bbc472efe8f89ba91e29b3cb9b2c4305e40..21a29ddfcb2fcb99eb7c749983a35
 - 未知卡口 id → 抛出并在 UI 拒绝。
 - `zoom` 越界钳制到 [0,1]。
 - 极端参数（如 600/0.9）按公式给出巨型尺寸，不人为缩小，保证物理一致可对比。
+
+## [S4] Super-tele axial layout & packaging
+
+300mm+（`fBase ≥ 300` 或 `fEff ≥ 300`）外壳与镜组按参考剖面图的**归一化轴向比例** `u = z / L`（`u=0` 卡口面，`u=1` 前玉顶）摆放，与参考图左（前）→右（卡口）一一对应：
+
+| 区段 | u 范围 | 直径（相对 D_front） | 备注 |
+|------|--------|----------------------|------|
+| 卡口 + 收腰/滤镜槽 | 0.00–0.08 | 0.38–0.45 | 金属卡口、插入式滤镜槽 |
+| 后筒开关面板 | 0.08–0.28 | 0.52 | 双排开关 |
+| 三脚架套环 + L 脚座 | 0.28–0.45 | 0.62 | 大旋钮、皮带孔 |
+| 功能环 + 对焦环 | 0.45–0.62 | 0.72 | 黑橡胶齿纹 |
+| 台阶过渡 | 0.62–0.66 | 0.72→1.00 | |
+| 大前筒 | 0.66–0.92 | 1.00 | G 徽标 |
+| 遮光罩 | 0.92–1.00 | 1.04 | 黑 |
+
+**内部镜组中心**（u）：前大弯月 0.92；黄胶合三片 0.52–0.56；橙弯月 0.43；中继双片 0.34/0.37；绿后组密排 0.16–0.28；后端平板 0.12。
+
+**剖面 UI**：顶栏选项「剖面 / 内部」；开启时外壳半透明并显示上述镜组；关闭时仅外观。仅对 300mm+ 显示镜组。
+
+**打包脚本**：
+
+- 仓库根目录 `build.bat`：`npm install` → `npm run build` → 将 `run.bat` 复制进 `dist/`。
+- `dist/run.bat`：在 `dist/` 起本地静态服务并打开默认浏览器（`http://127.0.0.1:8765/`）。
 
 ## [S3] Out of Scope
 
@@ -149,3 +172,7 @@ commits: be9c6bbc472efe8f89ba91e29b3cb9b2c4305e40..21a29ddfcb2fcb99eb7c749983a35
 - [x] T3: 程序化镜头网格构建器 — acceptance: 单组 `E f/0.9 600mm` 与 `E 70–200 f/2.8` 外观分段直径/长度与 `LensGeometry` 数值一致 (covers: S2; depends: T1)
 - [x] T4: 多镜头并排 + 对齐/线框/参数台 UI — acceptance: 可添加题述两组并按卡口/前端对齐，顶视图对齐正确，线框可叠加，变焦滑杆实时改形 (covers: S2; depends: T2, T3)
 - [x] T5: 构建与聚焦验证 — acceptance: `npm run build` 成功，`npm test` 全绿；记录命令结果 (covers: S2; depends: T4)
+- [ ] T6: 300mm+ 轴向比例对齐参考图 — acceptance: 外壳分段与镜组 u 落在 [S4] 表内；单测断言关键分段中心 u (covers: S4)
+- [ ] T7: 剖面 UI 选项 — acceptance: 顶栏「剖面 / 内部」可开关镜组与外壳透明度 (covers: S4; depends: T6)
+- [ ] T8: build.bat 与 dist/run.bat — acceptance: `build.bat` 产出 dist 且含 run.bat；run.bat 能打开浏览器访问 (covers: S4)
+- [ ] T9: 验证 + 独立评审 — acceptance: `npm test`/`npm run build` 通过；评审覆盖 T6–T8 (covers: S4; depends: T6, T7, T8)
