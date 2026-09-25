@@ -86,6 +86,14 @@ export function createRulers(): RulerBundle {
 }
 
 export function makeTextSprite(text: string): THREE.Sprite {
+  // Node 单测环境无 document：用占位 Sprite，保证几何可构建
+  if (typeof document === 'undefined') {
+    const mat = new THREE.SpriteMaterial({ color: 0xe8d48a, transparent: true });
+    const sprite = new THREE.Sprite(mat);
+    sprite.scale.set(60, 15, 1);
+    sprite.name = text;
+    return sprite;
+  }
   const canvas = document.createElement('canvas');
   canvas.width = 256;
   canvas.height = 64;
@@ -104,5 +112,6 @@ export function makeTextSprite(text: string): THREE.Sprite {
   const mat = new THREE.SpriteMaterial({ map: texture, transparent: true });
   const sprite = new THREE.Sprite(mat);
   sprite.scale.set(60, 15, 1);
+  sprite.name = text;
   return sprite;
 }

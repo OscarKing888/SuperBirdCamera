@@ -19,6 +19,8 @@ export interface SceneApi {
   setLensWireframe(index: number, on: boolean): void;
   /** 300mm+ 内部镜组剖面 */
   setInteriorVisible(on: boolean): void;
+  /** 尺寸标注 */
+  setDimensionsVisible(on: boolean): void;
   setRulersVisible(on: boolean): void;
   setView(preset: ViewPreset): void;
   resize(): void;
@@ -69,6 +71,7 @@ export function createScene(container: HTMLElement): SceneApi {
   let alignMode: AlignMode = 'mount';
   let wireframeOverlay = false;
   let interiorVisible = false;
+  let dimensionsVisible = true;
   const lensWire = new Map<number, boolean>();
   let bundles: LensMeshBundle[] = [];
   const labelSprites: THREE.Sprite[] = [];
@@ -166,6 +169,7 @@ export function createScene(container: HTMLElement): SceneApi {
       bundle.solidRoot.visible = !forced || wireframeOverlay;
       // 剖面：外壳半透明 + 显示内部镜组
       bundle.interiorRoot.visible = interiorVisible;
+      bundle.dimRoot.visible = dimensionsVisible;
       const hasInterior = bundle.interiorRoot.children.length > 0;
       if (interiorVisible && hasInterior) {
         bundle.solidRoot.traverse((obj) => {
@@ -276,6 +280,10 @@ export function createScene(container: HTMLElement): SceneApi {
     },
     setInteriorVisible(on) {
       interiorVisible = on;
+      layout();
+    },
+    setDimensionsVisible(on) {
+      dimensionsVisible = on;
       layout();
     },
     setRulersVisible(on) {

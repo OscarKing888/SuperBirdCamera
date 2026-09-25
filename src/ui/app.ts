@@ -45,6 +45,7 @@ export function mountApp(root: HTMLElement): void {
       </label>
       <label><input type="checkbox" id="wireframe" />线框叠加</label>
       <label><input type="checkbox" id="interior" />剖面 / 内部</label>
+      <label><input type="checkbox" id="dims" checked />尺寸标注</label>
       <label><input type="checkbox" id="rulers" checked />3D 标尺</label>
       <button id="viewTop" type="button">顶视图</button>
       <button id="viewPersp" type="button">透视</button>
@@ -552,6 +553,10 @@ export function mountApp(root: HTMLElement): void {
 
   el<HTMLInputElement>('interior').addEventListener('change', (e) => {
     sceneApi.setInteriorVisible((e.target as HTMLInputElement).checked);
+  });
+
+  el<HTMLInputElement>('dims').addEventListener('change', (e) => {
+    sceneApi.setDimensionsVisible((e.target as HTMLInputElement).checked);
   });
 
   el<HTMLInputElement>('rulers').addEventListener('change', (e) => {

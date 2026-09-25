@@ -6,6 +6,7 @@ import {
   isSuperTele,
   type BuildStack,
 } from './superTele';
+import { addLensDimensions } from './dimensions';
 
 export interface LensMeshBundle {
   group: THREE.Group;
@@ -13,6 +14,8 @@ export interface LensMeshBundle {
   wireRoot: THREE.Group;
   /** 300mm+ 内部镜组（剖面） */
   interiorRoot: THREE.Group;
+  /** 尺寸标注（总长/前口径/卡口径/入瞳） */
+  dimRoot: THREE.Group;
   geometry: LensGeometry;
   dispose: () => void;
 }
@@ -393,37 +396,7 @@ function addWireShell(
   });
 }
 
-function addDimensionMarks(
-  group: THREE.Group,
-  materials: THREE.Material[],
-  geometries: THREE.BufferGeometry[],
-  geo: LensGeometry,
-): void {
-  const dimMat = new THREE.LineBasicMaterial({ color: PALETTE.label });
-  materials.push(dimMat);
-  const dimY = geo.dFront / 2 + 16;
-  const lengthPts = [
-    new THREE.Vector3(0, dimY, 0),
-    new THREE.Vector3(0, dimY, geo.lengthTotal),
-    new THREE.Vector3(-5, dimY, 0),
-    new THREE.Vector3(5, dimY, 0),
-    new THREE.Vector3(-5, dimY, geo.lengthTotal),
-    new THREE.Vector3(5, dimY, geo.lengthTotal),
-  ];
-  const dimGeo = new THREE.BufferGeometry().setFromPoints(lengthPts);
-  geometries.push(dimGeo);
-  group.add(new THREE.LineSegments(dimGeo, dimMat));
 
-  const frontZ = geo.lengthTotal;
-  const fr = geo.dFront / 2;
-  const widthPts = [
-    new THREE.Vector3(-fr, 0, frontZ + 3),
-    new THREE.Vector3(fr, 0, frontZ + 3),
-  ];
-  const widthGeo = new THREE.BufferGeometry().setFromPoints(widthPts);
-  geometries.push(widthGeo);
-  group.add(new THREE.Line(widthGeo, dimMat));
-}
 
 function buildBarrelBody(
   parent: THREE.Group,
@@ -561,7 +534,8 @@ export function buildLensMeshes(geo: LensGeometry): LensMeshBundle {
   const solidRoot = new THREE.Group();
   const wireRoot = new THREE.Group();
   const interiorRoot = new THREE.Group();
-  group.add(solidRoot, wireRoot, interiorRoot);
+  const dimRoot = new THREE.Group();
+  group.add(solidRoot, wireRoot, interiorRoot, dimRoot);
 
   const materials: THREE.Material[] = [];
   const geometries: THREE.BufferGeometry[] = [];
@@ -572,13 +546,13 @@ export function buildLensMeshes(geo: LensGeometry): LensMeshBundle {
     // 300mm+：GM 白炮外壳 + 可切换内部镜组
     buildSuperTeleShell(solidRoot, geo, stack);
     buildOpticalInterior(interiorRoot, geo, stack);
-    addDimensionMarks(group, materials, geometries, geo);
+    addLensDimensions(dimRoot, geo, stack);
     addWireShell(solidRoot, wireRoot, materials, geometries);
   } else {
     addMountAssembly(solidRoot, materials, geometries, geo);
     buildBarrelBody(solidRoot, materials, geometries, geo, cls);
     addFrontAssembly(solidRoot, materials, geometries, geo, cls);
-    addDimensionMarks(group, materials, geometries, geo);
+    addLensDimensions(dimRoot, geo, stack);
     addWireShell(solidRoot, wireRoot, materials, geometries);
   }
 
@@ -593,6 +567,7 @@ export function buildLensMeshes(geo: LensGeometry): LensMeshBundle {
     solidRoot,
     wireRoot,
     interiorRoot,
+    dimRoot,
     geometry: geo,
     dispose: () => {
       for (const g of geometries) g.dispose();
