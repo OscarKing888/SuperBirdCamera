@@ -27,9 +27,13 @@ if not errorlevel 1 (
   echo ERROR: %cd%\index.html is the Vite SOURCE page, not a built site.
   echo Chrome will show a blank page because /src/main.ts is not compiled JS.
   echo.
-  echo Use one of:
-  echo   1^) build.bat then dist\run.bat
-  echo   2^) npm run dev   ^(development server^)
+  echo This folder is the project root. You must build first:
+  echo   1^) build.bat
+  echo   2^) dist\run.bat
+  echo.
+  echo If build.bat failed on npm/network, fix that then re-run it.
+  echo If node_modules is broken: delete it and run build.bat again.
+  echo For slow networks: set NPM_REGISTRY=https://registry.npmmirror.com
   pause
   exit /b 1
 )
