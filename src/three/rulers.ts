@@ -52,6 +52,46 @@ export function createRulers(): RulerBundle {
     disposables.push(sprite.material as THREE.Material);
   }
 
+  // 纵轴标尺（Z 向）：与 X 标尺在 0 点垂直相交
+  // 交点 (0, y, -80) 即 X 标尺的 0 mm 处
+  const yR = 0.5;
+  const zCross = -80;
+  const z0 = -400;
+  const z1 = 1200;
+  const zPts: THREE.Vector3[] = [];
+  zPts.push(new THREE.Vector3(0, yR, z0), new THREE.Vector3(0, yR, z1));
+  for (let z = z0; z <= z1; z += 10) {
+    const isHundred = Math.abs(z % 100) < 1e-6;
+    const isFifty = Math.abs(z % 50) < 1e-6;
+    const h = isHundred ? 18 : isFifty ? 12 : 6;
+    // 刻度偏向 +X，与 X 尺刻度（偏 +Z）成直角
+    zPts.push(new THREE.Vector3(0, yR, z), new THREE.Vector3(h, yR, z));
+  }
+  // 0 点十字标记（与横尺垂直）
+  const cross = 22;
+  zPts.push(
+    new THREE.Vector3(-cross, yR, zCross),
+    new THREE.Vector3(cross, yR, zCross),
+    new THREE.Vector3(0, yR, zCross - cross),
+    new THREE.Vector3(0, yR, zCross + cross),
+  );
+  const zRulerGeo = new THREE.BufferGeometry().setFromPoints(zPts);
+  disposables.push(zRulerGeo);
+  group.add(new THREE.LineSegments(zRulerGeo, barMat));
+
+  for (let z = z0; z <= z1; z += 100) {
+    const sprite = makeTextSprite(`${z}`);
+    sprite.position.set(28, yR + 22, z);
+    labels.push(sprite);
+    group.add(sprite);
+    disposables.push(sprite.material as THREE.Material);
+  }
+  const originLabel = makeTextSprite('0');
+  originLabel.position.set(-24, yR + 22, zCross);
+  labels.push(originLabel);
+  group.add(originLabel);
+  disposables.push(originLabel.material as THREE.Material);
+
   // 鸟旁身高标尺（可随鸟平移）
   const heightPts = [
     new THREE.Vector3(-20, 0, 0),
