@@ -39,9 +39,9 @@ if not errorlevel 1 (
 )
 
 echo Serving %cd%
-echo Trying ports 8765-8776 if busy...
+echo Binding all interfaces, ports 8765-8776 if busy...
+echo Prints Local / LAN / Public URLs after start.
 echo Close this window to stop the server.
-echo Browser opens automatically after the server is listening.
 
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0serve.ps1"
 if errorlevel 1 (
